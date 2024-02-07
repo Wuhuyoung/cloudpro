@@ -9,5 +9,5 @@ ${AnsiColor.BLUE}
                                                  \ \_\
                                                   \/_/
 
- ${AnsiColor.YELLOW}ENV:${spring.profiles.active}                         ${AnsiColor.BRIGHT_RED}VERSION:${swagger2.version}
+ ${AnsiColor.YELLOW}ENV:${spring.profiles.active:default}                         ${AnsiColor.BRIGHT_RED}VERSION:${swagger2.version:1.0}
  ${AnsiColor.DEFAULT}

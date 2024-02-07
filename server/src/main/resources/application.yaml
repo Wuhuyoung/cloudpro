@@ -21,3 +21,14 @@ management:
       exposure:
         include: '*'
         exclude: env,beans
+swagger2:
+  show: true
+  group-name: ${spring.application.name}
+  base-package: com.cloud.pro
+  title: cloud-pro docs
+  description: cloud-pro docs
+  terms-of-service-url: http://127.0.0.1:${server.port}
+  contact-name: han
+  contact-url: han
+  contact-email: 1138841120@qq.com
+  version: 1.0

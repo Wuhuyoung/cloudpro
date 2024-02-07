@@ -7,9 +7,10 @@
         <groupId>com.cloud.pro</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>cloud-pro-web</artifactId>
+    <artifactId>cloud-pro-swagger2</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -24,10 +25,22 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>swagger-bootstrap-ui</artifactId>
+        </dependency>
+        <!--其他模块引入该sdk时，在编写配置文件时生成一些自动提示-->
+        <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
         </dependency>
     </dependencies>
-
 
 </project>
