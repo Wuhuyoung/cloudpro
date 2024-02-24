@@ -11,20 +11,7 @@ spring:
     multipart:
       max-file-size: 3072MB
       max-request-size: 3072MB
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/cloud_pro?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 491001
-mybatis-plus:
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      logic-delete-field: isDelete # 全局逻辑删除的实体字段名
-      logic-delete-value: 1 # 逻辑已删除值（默认为 1）
-      logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
+
 server:
   port: 8090
 
@@ -45,3 +32,7 @@ swagger2:
   contact-url: han
   contact-email: 1138841120@qq.com
   version: 1.0
+logging:
+  file: ${user.home}/logs/${spring.application.name}/${spring.application.name}.log
+  level:
+    root: INFO

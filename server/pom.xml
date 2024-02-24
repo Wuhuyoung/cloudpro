@@ -25,6 +25,11 @@
         </dependency>
         <dependency>
             <groupId>com.cloud.pro</groupId>
+            <artifactId>cloud-pro-mybatis-plus</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud.pro</groupId>
             <artifactId>cloud-pro-swagger2</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
