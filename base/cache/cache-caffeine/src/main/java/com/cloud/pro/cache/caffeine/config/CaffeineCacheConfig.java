@@ -14,7 +14,9 @@ import org.springframework.context.annotation.Configuration;
 import javax.annotation.Resource;
 
 /**
- * Caffeine cache配置类
+ * Caffeine cache管理器配置
+ * 该缓存管理器不支持事务
+ * 该缓存策略推荐使用，效率最高
  */
 @Configuration
 @Slf4j

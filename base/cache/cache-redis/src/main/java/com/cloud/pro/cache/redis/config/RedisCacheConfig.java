@@ -15,7 +15,9 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * Redis cache配置类
+ * redis cache配置类
+ * 该缓存解决方案不支持事务
+ * 该缓存解决方案直接集成spring-data-redis，所以舍弃自定义配置，直接使用默认Spring配置
  */
 @Configuration
 @EnableCaching
@@ -23,6 +25,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisCacheConfig {
 
     @Bean
+    @SuppressWarnings("all")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
@@ -43,6 +46,7 @@ public class RedisCacheConfig {
      * @return
      */
     @Bean
+    @SuppressWarnings("all")
     public CacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration
                 .defaultCacheConfig()
