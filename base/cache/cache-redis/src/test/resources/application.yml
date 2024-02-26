@@ -1,0 +1,14 @@
+spring:
+  # Redis 配置
+  redis:
+    database: 0
+    host: 192.168.5.100
+    port: 6379
+    timeout: 5000
+    password: 491001
+    lettuce: #lettuce是springboot内置的，如果用jedis还需要导入相应依赖
+      pool:
+        max-active: 8  #最大连接
+        max-idle: 8   #最大空闲连接
+        min-idle: 0   #最小空闲连接
+        max-wait: 1000ms #连接等待时间

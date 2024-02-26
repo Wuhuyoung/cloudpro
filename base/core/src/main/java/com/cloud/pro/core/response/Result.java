@@ -51,7 +51,7 @@ public class Result<T> implements Serializable {
         return new Result<T>(ResponseCode.SUCCESS.getCode(), message);
     }
 
-    public static <T> Result<T> success(T data) {
+    public static <T> Result<T> data(T data) {
         return new Result<T>(ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getDesc(), data);
     }
 

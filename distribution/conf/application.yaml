@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: cloud-pro-server
+  output:
+    ansi:
+      enabled: always
+  mvc:
+    servlet:
+      load-on-startup: 1
+  servlet:
+    multipart:
+      max-file-size: 3072MB
+      max-request-size: 3072MB
+
+server:
+  port: 8090
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+        exclude: env,beans
+swagger2:
+  show: true
+  group-name: ${spring.application.name}
+  base-package: com.cloud.pro
+  title: cloud-pro docs
+  description: cloud-pro docs
+  terms-of-service-url: http://127.0.0.1:${server.port}
+  contact-name: han
+  contact-url: han
+  contact-email: 1138841120@qq.com
+  version: 1.0
+logging:
+  file: ${user.home}/logs/${spring.application.name}/${spring.application.name}.log
+  level:
+    root: INFO
