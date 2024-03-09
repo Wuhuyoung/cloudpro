@@ -5,7 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * Caffeine cache自定义配置属性类
+ * Caffeine本地缓存配置属性类
+ * 该缓存策略推荐使用，效率最高
  */
 @Data
 @Component

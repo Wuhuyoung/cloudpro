@@ -35,6 +35,7 @@ public class BusinessException extends RuntimeException {
     }
 
     public BusinessException(String message) {
+        this.code = ResponseCode.ERROR.getCode();
         this.message = message;
     }
 }

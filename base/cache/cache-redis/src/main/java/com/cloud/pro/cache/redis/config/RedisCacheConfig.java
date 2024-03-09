@@ -14,15 +14,20 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.time.Duration;
+
 /**
- * Redis cache配置类
+ * redis cache配置类
+ * 该缓存解决方案不支持事务
+ * 该缓存解决方案直接集成spring-data-redis，所以舍弃自定义配置，直接使用默认Spring配置
  */
 @Configuration
 @EnableCaching
 @Slf4j
 public class RedisCacheConfig {
 
-    @Bean
+    @Bean(name = "redisTemplate")
+    @SuppressWarnings("all")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
@@ -43,11 +48,16 @@ public class RedisCacheConfig {
      * @return
      */
     @Bean
+    @SuppressWarnings("all")
     public CacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration
                 .defaultCacheConfig()
+                // 设置key为String
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new Jackson2JsonRedisSerializer<Object>(Object.class)));
+                // 设置value为自动转Json的Object
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new Jackson2JsonRedisSerializer<Object>(Object.class)))
+                // 缓存数据保存1小时
+                .entryTtl(Duration.ofHours(1L));
 
         RedisCacheManager cacheManager = RedisCacheManager
                 .builder(RedisCacheWriter.lockingRedisCacheWriter(redisConnectionFactory))

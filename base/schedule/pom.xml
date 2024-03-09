@@ -3,27 +3,26 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>cloud-pro-backend</artifactId>
+        <artifactId>cloud-pro-base</artifactId>
         <groupId>com.cloud.pro</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>cloud-pro-base</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>core</module>
-        <module>web</module>
-        <module>swagger2</module>
-        <module>orm</module>
-        <module>cache</module>
-        <module>schedule</module>
-    </modules>
+    <artifactId>cloud-pro-schedule</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.cloud.pro</groupId>
+            <artifactId>cloud-pro-core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
 </project>

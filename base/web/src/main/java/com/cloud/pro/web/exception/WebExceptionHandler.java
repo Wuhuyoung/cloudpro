@@ -1,6 +1,7 @@
 package com.cloud.pro.web.exception;
 
 import com.cloud.pro.core.exception.BusinessException;
+import com.cloud.pro.core.exception.FrameworkException;
 import com.cloud.pro.core.response.ResponseCode;
 import com.cloud.pro.core.response.Result;
 import org.springframework.validation.BindException;
@@ -51,6 +52,11 @@ public class WebExceptionHandler {
     public Result bindExceptionHandler(BindException e) {
         FieldError fieldError = e.getBindingResult().getFieldErrors().stream().findFirst().get();
         return Result.fail(ResponseCode.ERROR_PARAM.getCode(), fieldError.getDefaultMessage());
+    }
+
+    @ExceptionHandler(value = FrameworkException.class)
+    public Result frameworkExceptionHandler(FrameworkException e) {
+        return Result.fail(ResponseCode.ERROR.getCode(), e.getMessage());
     }
 
     @ExceptionHandler(value = RuntimeException.class)
