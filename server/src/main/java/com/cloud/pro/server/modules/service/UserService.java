@@ -25,4 +25,10 @@ public interface UserService extends IService<User> {
      * @return
      */
     String login(UserLoginContext userLoginContext);
+
+    /**
+     * 退出登录
+     * @param userId
+     */
+    void exit(Long userId);
 }

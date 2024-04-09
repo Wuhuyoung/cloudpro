@@ -26,7 +26,7 @@ import java.time.Duration;
 @Slf4j
 public class RedisCacheConfig {
 
-    @Bean(name = "redisTemplate")
+    @Bean
     @SuppressWarnings("all")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);

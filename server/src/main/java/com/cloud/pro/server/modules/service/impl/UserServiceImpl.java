@@ -2,32 +2,28 @@ package com.cloud.pro.server.modules.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.pro.server.constants.FileConstants;
+import com.cloud.pro.server.constants.UserConstants;
 import com.cloud.pro.core.exception.BusinessException;
 import com.cloud.pro.core.response.ResponseCode;
 import com.cloud.pro.core.utils.JwtUtil;
 import com.cloud.pro.core.utils.PasswordUtil;
-import com.cloud.pro.server.constants.FileConstants;
 import com.cloud.pro.server.modules.context.CreateFolderContext;
 import com.cloud.pro.server.modules.context.UserLoginContext;
+import com.cloud.pro.server.modules.entity.User;
+import com.cloud.pro.server.modules.mapper.UserMapper;
+import com.cloud.pro.server.modules.service.UserService;
 import com.cloud.pro.server.modules.context.UserRegisterContext;
 import com.cloud.pro.server.modules.converter.UserConverter;
-import com.cloud.pro.server.modules.entity.User;
 import com.cloud.pro.server.modules.service.UserFileService;
-import com.cloud.pro.server.modules.service.UserService;
-import com.cloud.pro.server.modules.mapper.UserMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.time.LocalDate;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
-import static com.cloud.pro.server.constants.UserConstants.LOGIN_USER_ID;
-import static com.cloud.pro.server.constants.UserConstants.ONE_WEEK_MS;
-import static com.cloud.pro.server.constants.UserConstants.USER_LOGIN_TOKEN_PREFIX;
 
 /**
 * @author han
@@ -75,6 +71,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 生成一个有时效性的accessToken，缓存token，实现单设备登录限制(用户只能在一个设备登录)
         generateAndSaveAccessToken(userLoginContext);
         return userLoginContext.getAccessToken();
+    }
+
+    /**
+     * 退出登录
+     * @param userId
+     */
+    @Override
+    public void exit(Long userId) {
+        // 清除accessToken
+        try {
+            redisTemplate.delete(UserConstants.USER_LOGIN_TOKEN_PREFIX + userId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("用户退出登录失败");
+        }
     }
 
 
@@ -155,11 +166,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = userLoginContext.getEntity();
         Long userId = user.getUserId();
         String username = user.getUsername();
-        String accessToken = JwtUtil.generateToken(username, LOGIN_USER_ID, userId, ONE_WEEK_MS);
+        String accessToken = JwtUtil.generateToken(username, UserConstants.LOGIN_USER_ID, userId, UserConstants.ONE_WEEK_MS);
 
         // 虽然JWT是无状态的，但是存储在redis中，每次登录生成新的JWT，也能实现单设备登录限制
         // 一个用户在其他地方登录会导致该设备下线，需重新登录
-        redisTemplate.opsForValue().set(USER_LOGIN_TOKEN_PREFIX + userId, accessToken, ONE_WEEK_MS, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue().set(UserConstants.USER_LOGIN_TOKEN_PREFIX + userId, accessToken, UserConstants.ONE_WEEK_MS, TimeUnit.MILLISECONDS);
 
         userLoginContext.setAccessToken(accessToken);
     }
