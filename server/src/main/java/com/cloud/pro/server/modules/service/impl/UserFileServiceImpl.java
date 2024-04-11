@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,9 @@ import java.util.stream.Collectors;
 */
 @Service
 public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> implements UserFileService {
+
+    @Resource
+    private UserFileMapper userFileMapper;
 
     /**
      * 创建文件夹信息
@@ -42,6 +46,21 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
                 null,
                 createFolderContext.getUserId(),
                 null);
+    }
+
+    /**
+     * 查询用户的根文件夹信息
+     * @param userId
+     * @return
+     */
+    @Override
+    public UserFile getUserRootFile(Long userId) {
+        LambdaQueryWrapper<UserFile> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(UserFile::getUserId, userId);
+        lqw.eq(UserFile::getParentId, FileConstants.TOP_PARENT_ID);
+        lqw.eq(UserFile::getDelFlag, DelFlagEnum.NO.getCode());
+        lqw.eq(UserFile::getFolderFlag, FolderFlagEnum.YES.getCode());
+        return userFileMapper.selectOne(lqw);
     }
 
     /**********************************private**********************************/

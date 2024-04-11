@@ -4,12 +4,18 @@ import cn.hutool.core.lang.Assert;
 import com.cloud.pro.server.constants.UserConstants;
 import com.cloud.pro.core.exception.BusinessException;
 import com.cloud.pro.core.utils.JwtUtil;
+import com.cloud.pro.server.modules.context.ChangePasswordContext;
+import com.cloud.pro.server.modules.context.CheckAnswerContext;
+import com.cloud.pro.server.modules.context.CheckUsernameContext;
+import com.cloud.pro.server.modules.context.ResetPasswordContext;
 import com.cloud.pro.server.modules.context.UserLoginContext;
 import com.cloud.pro.server.modules.service.UserService;
 import com.cloud.pro.server.modules.context.UserRegisterContext;
+import com.cloud.pro.server.modules.vo.UserVO;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.commons.util.StringUtils;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,6 +120,114 @@ public class UserTest {
         userService.exit(id);
         Object exitUserId = redisTemplate.opsForValue().get(UserConstants.USER_LOGIN_TOKEN_PREFIX + id);
         Assertions.assertNull(exitUserId);
+    }
+
+    @Test
+    public void testCheckAnswer() {
+        CheckUsernameContext checkUsernameContext = new CheckUsernameContext();
+        checkUsernameContext.setUsername("1231");
+        String question = userService.checkUsername(checkUsernameContext);
+        Assertions.assertTrue(StringUtils.isNotBlank(question));
+
+        CheckAnswerContext checkAnswerContext = new CheckAnswerContext();
+        checkAnswerContext.setUsername("1231");
+        checkAnswerContext.setQuestion(question);
+        checkAnswerContext.setAnswer("小猫");
+        String token = userService.checkAnswer(checkAnswerContext);
+        Assertions.assertTrue(StringUtils.isNotBlank(token));
+    }
+
+    @Test
+    public void testCheckAnswerFail() {
+        CheckUsernameContext checkUsernameContext = new CheckUsernameContext();
+        checkUsernameContext.setUsername("1231");
+        String question = userService.checkUsername(checkUsernameContext);
+        Assertions.assertTrue(StringUtils.isNotBlank(question));
+        System.out.println("question=" + question);
+
+        CheckAnswerContext checkAnswerContext = new CheckAnswerContext();
+        checkAnswerContext.setUsername("1231");
+        checkAnswerContext.setQuestion(question);
+        checkAnswerContext.setAnswer("小狗");
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class, () -> {
+            String token = userService.checkAnswer(checkAnswerContext);
+        });
+        Assert.isTrue("密保答案错误".equals(exception.getMessage()));
+    }
+
+    @Test
+    public void testResetPassword() {
+        CheckUsernameContext checkUsernameContext = new CheckUsernameContext();
+        checkUsernameContext.setUsername("1231");
+        String question = userService.checkUsername(checkUsernameContext);
+        Assertions.assertTrue(StringUtils.isNotBlank(question));
+
+        CheckAnswerContext checkAnswerContext = new CheckAnswerContext();
+        checkAnswerContext.setUsername("1231");
+        checkAnswerContext.setQuestion(question);
+        checkAnswerContext.setAnswer("小猫");
+        String token = userService.checkAnswer(checkAnswerContext);
+        Assertions.assertTrue(StringUtils.isNotBlank(token));
+
+        ResetPasswordContext resetPasswordContext = new ResetPasswordContext();
+        resetPasswordContext.setUsername("1231");
+        resetPasswordContext.setPassword("123123");
+        resetPasswordContext.setToken(token);
+        userService.resetPassword(resetPasswordContext);
+    }
+
+    @Test
+    public void testChangePassword() {
+        UserRegisterContext context = createUserRegisterContext();
+        Long userId = userService.register(context);
+        Assert.isTrue(userId > 0L);
+
+        UserLoginContext loginContext = getUserLoginContext();
+
+        String accessToken = userService.login(loginContext);
+
+        ChangePasswordContext changePasswordContext = new ChangePasswordContext();
+        changePasswordContext.setUserId(loginContext.getEntity().getUserId());
+        changePasswordContext.setOldPassword(context.getPassword());
+        changePasswordContext.setNewPassword("1234567");
+
+        userService.changePassword(changePasswordContext);
+    }
+
+    @Test
+    public void testChangePasswordFail() {
+        UserRegisterContext context = createUserRegisterContext();
+        Long userId = userService.register(context);
+        Assert.isTrue(userId > 0L);
+
+        UserLoginContext loginContext = getUserLoginContext();
+
+        String accessToken = userService.login(loginContext);
+
+        ChangePasswordContext changePasswordContext = new ChangePasswordContext();
+        changePasswordContext.setUserId(loginContext.getEntity().getUserId());
+        changePasswordContext.setOldPassword(context.getPassword() + "_change");
+        changePasswordContext.setNewPassword("1234567");
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class, () -> {
+            userService.changePassword(changePasswordContext);
+        });
+        Assert.isTrue("原密码不正确".equals(exception.getMessage()));
+    }
+
+    @Test
+    public void testGetUserInfo() {
+        UserRegisterContext context = createUserRegisterContext();
+        Long userId = userService.register(context);
+        Assert.isTrue(userId > 0L);
+
+        UserLoginContext loginContext = getUserLoginContext();
+
+        String accessToken = userService.login(loginContext);
+
+        UserVO userVO = userService.info(userId);
+        Assertions.assertNotNull(userVO);
     }
 
     /**************************************private**************************************/

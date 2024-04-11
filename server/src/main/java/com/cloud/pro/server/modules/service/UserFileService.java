@@ -16,4 +16,11 @@ public interface UserFileService extends IService<UserFile> {
      * @return 文件id
      */
     Long createFolder(CreateFolderContext createFolderContext);
+
+    /**
+     * 查询用户的根文件夹信息
+     * @param userId
+     * @return
+     */
+    UserFile getUserRootFile(Long userId);
 }

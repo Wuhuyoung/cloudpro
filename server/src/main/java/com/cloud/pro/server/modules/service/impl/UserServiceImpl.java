@@ -8,14 +8,20 @@ import com.cloud.pro.core.exception.BusinessException;
 import com.cloud.pro.core.response.ResponseCode;
 import com.cloud.pro.core.utils.JwtUtil;
 import com.cloud.pro.core.utils.PasswordUtil;
+import com.cloud.pro.server.modules.context.ChangePasswordContext;
+import com.cloud.pro.server.modules.context.CheckAnswerContext;
+import com.cloud.pro.server.modules.context.CheckUsernameContext;
 import com.cloud.pro.server.modules.context.CreateFolderContext;
+import com.cloud.pro.server.modules.context.ResetPasswordContext;
 import com.cloud.pro.server.modules.context.UserLoginContext;
 import com.cloud.pro.server.modules.entity.User;
+import com.cloud.pro.server.modules.entity.UserFile;
 import com.cloud.pro.server.modules.mapper.UserMapper;
 import com.cloud.pro.server.modules.service.UserService;
 import com.cloud.pro.server.modules.context.UserRegisterContext;
 import com.cloud.pro.server.modules.converter.UserConverter;
 import com.cloud.pro.server.modules.service.UserFileService;
+import com.cloud.pro.server.modules.vo.UserVO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -86,6 +92,126 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             e.printStackTrace();
             throw new RuntimeException("用户退出登录失败");
         }
+    }
+
+    /**
+     * 用户忘记密码 - 校验用户名
+     * @param checkUsernameContext
+     * @return
+     */
+    @Override
+    public String checkUsername(CheckUsernameContext checkUsernameContext) {
+        LambdaQueryWrapper<User> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(User::getUsername, checkUsernameContext.getUsername());
+        User user = userMapper.selectOne(lqw);
+        if (Objects.isNull(user)) {
+            throw new BusinessException("该用户不存在");
+        }
+        String question = user.getQuestion();
+        if (StringUtils.isBlank(question)) {
+            throw new BusinessException("用户未设置密保问题");
+        }
+        return question;
+    }
+
+    /**
+     * 用户忘记密码 - 校验密保答案
+     * @param checkAnswerContext
+     * @return
+     */
+    @Override
+    public String checkAnswer(CheckAnswerContext checkAnswerContext) {
+        LambdaQueryWrapper<User> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(User::getUsername, checkAnswerContext.getUsername());
+        lqw.eq(User::getQuestion, checkAnswerContext.getQuestion());
+        lqw.eq(User::getAnswer, checkAnswerContext.getAnswer());
+
+        long count = this.count(lqw);
+        if (count == 0) {
+            throw new BusinessException("密保答案错误");
+        }
+
+        return generateAnswerToken(checkAnswerContext);
+    }
+
+    /**
+     * 用户忘记密码 - 重置密码
+     * @param resetPasswordContext
+     */
+    @Override
+    public void resetPassword(ResetPasswordContext resetPasswordContext) {
+        String username = resetPasswordContext.getUsername();
+        String password = resetPasswordContext.getPassword();
+        String token = resetPasswordContext.getToken();
+        // 校验token是否正确
+        Object tokenUsername = JwtUtil.analyzeToken(token, UserConstants.FORGET_USERNAME);
+        if (Objects.isNull(tokenUsername)) {
+            throw new BusinessException(ResponseCode.TOKEN_EXPIRE);
+        }
+        if (!username.equals(String.valueOf(tokenUsername))) {
+            throw new BusinessException("token错误");
+        }
+        // 重置密码
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+        if (Objects.isNull(user)) {
+            throw new BusinessException("该用户不存在");
+        }
+        String dbPassword = PasswordUtil.encryptPassword(user.getSalt(), password);
+        user.setPassword(dbPassword);
+        if (!this.updateById(user)) {
+            throw new BusinessException("重置用户密码失败");
+        }
+    }
+
+    /**
+     * 修改密码
+     * @param changePasswordContext
+     */
+    @Override
+    public void changePassword(ChangePasswordContext changePasswordContext) {
+        Long userId = changePasswordContext.getUserId();
+        String oldPassword = changePasswordContext.getOldPassword();
+        String newPassword = changePasswordContext.getNewPassword();
+        // 1.校验原密码是否正确
+        User user = userMapper.selectById(userId);
+        if (Objects.isNull(user)) {
+            throw new BusinessException("用户不存在");
+        }
+        String oldDbPassword = user.getPassword();
+        String salt = user.getSalt();
+        if (!PasswordUtil.encryptPassword(salt, oldPassword).equals(oldDbPassword)) {
+            throw new BusinessException("原密码不正确");
+        }
+        // 2.修改密码
+        if (StringUtils.equals(oldPassword, newPassword)) {
+            throw new BusinessException("原密码和新密码不能相同");
+        }
+        user.setPassword(PasswordUtil.encryptPassword(salt, newPassword));
+        if (!this.updateById(user)) {
+            throw new BusinessException("修改密码失败");
+        }
+        // 3.退出登录状态
+        exit(userId);
+    }
+
+    /**
+     * 查询用户信息
+     * @param userId
+     * @return
+     */
+    @Override
+    public UserVO info(Long userId) {
+        // 1.查询用户信息
+        User user = userMapper.selectById(userId);
+        if (Objects.isNull(user)) {
+            throw new BusinessException("用户信息查询失败");
+        }
+        // 2.查询用户根文件信息
+        UserFile userFile = userFileService.getUserRootFile(userId);
+        if (Objects.isNull(userFile)) {
+            throw new BusinessException("查询用户根文件夹信息失败");
+        }
+        return userConverter.assembleUserVO(user, userFile);
     }
 
 
@@ -173,6 +299,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         redisTemplate.opsForValue().set(UserConstants.USER_LOGIN_TOKEN_PREFIX + userId, accessToken, UserConstants.ONE_WEEK_MS, TimeUnit.MILLISECONDS);
 
         userLoginContext.setAccessToken(accessToken);
+    }
+
+    /**
+     * 生成用户忘记密码-校验密保答案通过的临时token
+     * 失效：5分钟
+     * @param checkAnswerContext
+     * @return
+     */
+    private String generateAnswerToken(CheckAnswerContext checkAnswerContext) {
+        String token = JwtUtil.generateToken(checkAnswerContext.getUsername(),
+                UserConstants.FORGET_USERNAME,
+                checkAnswerContext.getUsername(),
+                UserConstants.FIVE_MINUTES_MS);
+        return token;
     }
 }
 
