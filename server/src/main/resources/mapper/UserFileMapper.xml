@@ -27,4 +27,27 @@
         create_user,create_time,update_user,
         update_time
     </sql>
+    <select id="selectFileList" resultType="com.cloud.pro.server.modules.vo.UserFileVO">
+        select file_id as fileId,
+               parent_id as parentId,
+               filename,
+               folder_flag as folderFlag,
+               file_size_desc as fileSizeDesc,
+               file_type as fileType,
+               update_time as updateTime
+        from cloud_pro_user_file
+        where user_id = #{context.userId}
+                <if test="context.delFlag != null">
+                    and del_flag = #{context.delFlag}
+                </if>
+                <if test="context.parentId != null and context.parentId != -1">
+                    and parent_id = #{context.parentId}
+                </if>
+                <if test="context.fileTypeArray != null">
+                    and file_type in
+                    <foreach collection="context.fileTypeArray" open="(" close=")" separator="," item="item">
+                        #{item}
+                    </foreach>
+                </if>
+    </select>
 </mapper>

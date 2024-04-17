@@ -1,11 +1,11 @@
 package com.cloud.pro.server.modules.service;
 
-import com.cloud.pro.server.modules.context.ChangePasswordContext;
-import com.cloud.pro.server.modules.context.CheckAnswerContext;
-import com.cloud.pro.server.modules.context.CheckUsernameContext;
-import com.cloud.pro.server.modules.context.ResetPasswordContext;
-import com.cloud.pro.server.modules.context.UserLoginContext;
-import com.cloud.pro.server.modules.context.UserRegisterContext;
+import com.cloud.pro.server.modules.context.user.ChangePasswordContext;
+import com.cloud.pro.server.modules.context.user.CheckAnswerContext;
+import com.cloud.pro.server.modules.context.user.CheckUsernameContext;
+import com.cloud.pro.server.modules.context.user.ResetPasswordContext;
+import com.cloud.pro.server.modules.context.user.UserLoginContext;
+import com.cloud.pro.server.modules.context.user.UserRegisterContext;
 import com.cloud.pro.server.modules.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.pro.server.modules.vo.UserVO;

@@ -1,8 +1,15 @@
 package com.cloud.pro.server.modules.service;
 
-import com.cloud.pro.server.modules.context.CreateFolderContext;
+import com.cloud.pro.server.modules.context.file.DeleteFileContext;
+import com.cloud.pro.server.modules.context.file.QueryFileListContext;
+import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
+import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
+import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.entity.UserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cloud.pro.server.modules.vo.UserFileVO;
+
+import java.util.List;
 
 /**
 * @author han
@@ -23,4 +30,30 @@ public interface UserFileService extends IService<UserFile> {
      * @return
      */
     UserFile getUserRootFile(Long userId);
+
+    /**
+     * 查询用户文件列表
+     * @param queryFileListContext
+     * @return
+     */
+    List<UserFileVO> getFileList(QueryFileListContext queryFileListContext);
+
+    /**
+     * 文件重命名
+     * @param context
+     */
+    void updateFilename(UpdateFilenameContext context);
+
+    /**
+     * 批量删除文件
+     * @param deleteFileContext
+     */
+    void deleteFile(DeleteFileContext deleteFileContext);
+
+    /**
+     * 文件秒传
+     * @param secUploadFileContext
+     * @return
+     */
+    boolean secUpload(SecUploadFileContext secUploadFileContext);
 }

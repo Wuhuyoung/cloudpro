@@ -16,7 +16,7 @@ import lombok.Data;
 @Data
 public class UserFile implements Serializable {
     /**
-     * 文件记录ID
+     * 文件ID
      */
     @TableId
     private Long fileId;
@@ -47,7 +47,7 @@ public class UserFile implements Serializable {
     private Integer folderFlag;
 
     /**
-     * 文件大小展示字符
+     * 文件大小描述
      */
     private String fileSizeDesc;
 

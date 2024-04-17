@@ -1,7 +1,12 @@
 package com.cloud.pro.server.modules.mapper;
 
+import com.cloud.pro.server.modules.context.file.QueryFileListContext;
 import com.cloud.pro.server.modules.entity.UserFile;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cloud.pro.server.modules.vo.UserFileVO;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
 * @author han
@@ -11,6 +16,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 */
 public interface UserFileMapper extends BaseMapper<UserFile> {
 
+    List<UserFileVO> selectFileList(@Param("context") QueryFileListContext queryFileListContext);
 }
 
 

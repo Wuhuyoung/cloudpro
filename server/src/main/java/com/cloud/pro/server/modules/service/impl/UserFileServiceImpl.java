@@ -1,23 +1,40 @@
 package com.cloud.pro.server.modules.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.pro.core.constants.CommonConstants;
 import com.cloud.pro.core.exception.BusinessException;
+import com.cloud.pro.core.utils.FileUtil;
 import com.cloud.pro.core.utils.IdUtil;
+import com.cloud.pro.server.common.event.DeleteFileEvent;
 import com.cloud.pro.server.constants.FileConstants;
 import com.cloud.pro.server.enums.DelFlagEnum;
+import com.cloud.pro.server.enums.FileTypeEnum;
 import com.cloud.pro.server.enums.FolderFlagEnum;
-import com.cloud.pro.server.modules.context.CreateFolderContext;
+import com.cloud.pro.server.modules.context.file.DeleteFileContext;
+import com.cloud.pro.server.modules.context.file.QueryFileListContext;
+import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
+import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
+import com.cloud.pro.server.modules.context.user.CreateFolderContext;
+import com.cloud.pro.server.modules.entity.File;
 import com.cloud.pro.server.modules.entity.UserFile;
+import com.cloud.pro.server.modules.service.FileService;
 import com.cloud.pro.server.modules.service.UserFileService;
 import com.cloud.pro.server.modules.mapper.UserFileMapper;
+import com.cloud.pro.server.modules.vo.UserFileVO;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -27,10 +44,21 @@ import java.util.stream.Collectors;
 * @createDate 2024-02-26 23:00:21
 */
 @Service
-public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> implements UserFileService {
+public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
+        implements UserFileService, ApplicationContextAware {
 
     @Resource
     private UserFileMapper userFileMapper;
+
+    @Resource
+    private FileService fileService;
+
+    private static ApplicationContext applicationContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        UserFileServiceImpl.applicationContext = applicationContext;
+    }
 
     /**
      * 创建文件夹信息
@@ -61,6 +89,86 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
         lqw.eq(UserFile::getDelFlag, DelFlagEnum.NO.getCode());
         lqw.eq(UserFile::getFolderFlag, FolderFlagEnum.YES.getCode());
         return userFileMapper.selectOne(lqw);
+    }
+
+    /**
+     * 查询用户文件列表
+     * @param queryFileListContext
+     * @return
+     */
+    @Override
+    public List<UserFileVO> getFileList(QueryFileListContext queryFileListContext) {
+        List<UserFileVO> userFileVOList = userFileMapper.selectFileList(queryFileListContext);
+        return userFileVOList;
+    }
+
+    /**
+     * 更新文件名称
+     * @param context
+     */
+    @Override
+    public void updateFilename(UpdateFilenameContext context) {
+        checkUpdateFilenameCondition(context);
+        UserFile userFile = context.getUserFile();
+        userFile.setFilename(context.getNewFilename());
+        userFile.setUpdateUser(context.getUserId());
+        boolean result = this.updateById(userFile);
+        if (!result) {
+            throw new BusinessException("文件重命名失败");
+        }
+    }
+
+    /**
+     * 批量删除文件
+     * @param deleteFileContext
+     */
+    @Override
+    public void deleteFile(DeleteFileContext deleteFileContext) {
+        // 1.校验删除的条件
+        checkFileDeleteCondition(deleteFileContext);
+        // 2.执行批量删除
+        doDeleteFile(deleteFileContext);
+    }
+
+    /**
+     * 文件秒传
+     * @param context
+     * @return
+     */
+    @Override
+    public boolean secUpload(SecUploadFileContext context) {
+        // 1.通过文件的唯一标识，查找对应的实体文件记录
+        File file = getFileByIdentifier(context.getIdentifier());
+        // 2.如果没有查到，直接返回秒传失败
+        if (Objects.isNull(file)) {
+            return false;
+        }
+        // 3.如果查到，直接挂载关联关系，返回秒传成功
+        saveUserFile(context.getParentId(),
+                context.getFilename(),
+                FolderFlagEnum.NO,
+                FileTypeEnum.getFileTypeCode(FileUtil.getFileSuffix(context.getFilename())),
+                file.getFileId(), // realFileId
+                context.getUserId(),
+                file.getFileSizeDesc());
+        return true;
+    }
+
+    /**
+     * 通过文件的唯一标识查找文件
+     * @param identifier
+     * @return
+     */
+    private File getFileByIdentifier(String identifier) {
+        LambdaUpdateWrapper<File> lqw = new LambdaUpdateWrapper<>();
+        lqw.eq(File::getIdentifier, identifier);
+        //todo 这里可能有其他用户在并发查询，然后都没有查到唯一标识，最后会插入两条具有相同identifier的物理文件，秒传业务需要加锁保证线程安全
+        // 方法一：查询时加锁，如果没有查到identifier就先向数据库中添加一个identifier？这里逻辑有些问题，性能不高
+        // 方法二：可以用Redis先存储一下identifier：先查Redis(需加锁保证线程安全)，有相同的identifier就实现秒传，没有就保存到Redis中，释放锁，再去数据库中查(此时就不用加锁了)
+        //  数据库中有就可以秒传，没有就不能
+        // 这里的业务逻辑考虑一下如何保证 性能和线程安全
+
+        return fileService.getOne(lqw);
     }
 
     /**********************************private**********************************/
@@ -132,7 +240,6 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
 
         // 查找重复名称的文件
         List<UserFile> fileList = getDuplicateFilename(userFile, newFilenameWithoutSuffix, newFilenameSuffix);
-
         if (CollectionUtils.isEmpty(fileList)) {
             return;
         }
@@ -140,7 +247,6 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
         List<String> filenameList = fileList.stream().map(UserFile::getFilename).collect(Collectors.toList());
 
         int count = 1;
-
         while (filenameList.contains(filename)) {
             filename = assembleNewFilename(newFilenameWithoutSuffix, count, newFilenameSuffix);
             count++;
@@ -183,8 +289,117 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
         return newFilename.toString();
     }
 
+    /**
+     * 更新文件名称的条件校验
+     * @param context
+     */
+    private void checkUpdateFilenameCondition(UpdateFilenameContext context) {
+        // 1.文件ID是有效的
+        Long fileId = context.getFileId();
+        UserFile userFile = this.getById(fileId);
+        if (Objects.isNull(userFile)) {
+            throw new BusinessException("该文件ID无效");
+        }
+        // 2.用户有权限更新该文件的名称
+        if (!Objects.equals(userFile.getUserId(), context.getUserId())) {
+            throw new BusinessException("当前用户没有修改该文件名称的权限");
+        }
+        // 3.新旧文件名称不能一样
+        if (StringUtils.equals(userFile.getFilename(), context.getNewFilename())) {
+            throw new BusinessException("请设置一个新的文件名称");
+        }
+        // 4.不能和当前文件夹下的其他文件名称一样
+        LambdaQueryWrapper<UserFile> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(UserFile::getParentId, userFile.getParentId());
+        lqw.eq(UserFile::getFilename, context.getNewFilename());
+        lqw.eq(UserFile::getUserId, context.getUserId());
+        lqw.eq(UserFile::getFolderFlag, userFile.getFolderFlag());
+        lqw.eq(UserFile::getDelFlag, DelFlagEnum.NO.getCode());
+
+        long count = this.count(lqw);
+        if (count > 0) {
+            throw new BusinessException("该名称已被占用");
+        }
+        context.setUserFile(userFile);
+    }
+
+    /**
+     * 校验文件删除的条件
+     * @param deleteFileContext
+     */
+    private void checkFileDeleteCondition(DeleteFileContext deleteFileContext) {
+        List<Long> fileIdList = deleteFileContext.getFileIdList();
+        Long userId = deleteFileContext.getUserId();
+
+        // 1.文件ID合法
+        List<UserFile> userFileList = this.listByIds(fileIdList);
+        if (CollectionUtils.isEmpty(userFileList)) {
+            throw new BusinessException("要删除的文件不存在");
+        }
+        if (userFileList.size() != fileIdList.size()) {
+            throw new BusinessException("存在不合法的文件记录");
+        }
+        // 2.用户拥有删除该文件的权限
+        Set<Long> userIdSet = userFileList.stream().map(UserFile::getUserId).collect(Collectors.toSet());
+        if (userIdSet.size() != 1) {
+            throw new BusinessException("存在不合法的文件记录");
+        }
+        Long dbUserId = userIdSet.stream().findFirst().get();
+        if (!Objects.equals(dbUserId, userId)) {
+            throw new BusinessException("当前用户没有删除该文件的权限");
+        }
+    }
+
+    /**
+     * 执行文件删除的逻辑
+     * 1.需递归删除文件夹下的文件
+     * 2.对外发布批量删除文件的事件，给其他模块订阅使用
+     * @param deleteFileContext
+     */
+    private void doDeleteFile(DeleteFileContext deleteFileContext) {
+        List<Long> fileIdList = deleteFileContext.getFileIdList();
+
+        // 查询文件夹下的子文件
+        DeleteFileContext childrenFileContext = getChildrenFile(deleteFileContext);
+        if (!Objects.isNull(childrenFileContext)) {
+            // 递归删除文件夹下的子文件
+            doDeleteFile(childrenFileContext);
+        }
+
+        // 删除当前文件
+        LambdaUpdateWrapper<UserFile> luw = new LambdaUpdateWrapper<>();
+        luw.in(UserFile::getFileId, fileIdList);
+        luw.set(UserFile::getDelFlag, DelFlagEnum.YES.getCode());
+        if (!this.update(luw)) {
+            throw new BusinessException("文件删除失败");
+        }
+        // 发布删除文件的事件
+        DeleteFileEvent deleteFileEvent = new DeleteFileEvent(this, fileIdList);
+        applicationContext.publishEvent(deleteFileEvent);
+    }
+
+    /**
+     * 获取当前文件夹下的所有子文件
+     * @param deleteFileContext
+     * @return
+     */
+    private DeleteFileContext getChildrenFile(DeleteFileContext deleteFileContext) {
+        List<Long> fileIdList = deleteFileContext.getFileIdList();
+        Long userId = deleteFileContext.getUserId();
+
+        LambdaUpdateWrapper<UserFile> lqw = new LambdaUpdateWrapper<>();
+        lqw.in(UserFile::getParentId, fileIdList);
+        lqw.eq(UserFile::getDelFlag, DelFlagEnum.NO.getCode());
+        List<UserFile> userFileList = this.list(lqw);
+        if (CollectionUtils.isEmpty(userFileList)) {
+            return null;
+        }
+        List<Long> childrenFileIdList = userFileList.stream().map(UserFile::getFileId).collect(Collectors.toList());
+        DeleteFileContext childrenContext = new DeleteFileContext();
+        childrenContext.setFileIdList(childrenFileIdList);
+        childrenContext.setUserId(userId);
+        return childrenContext;
+    }
+
 }
-
-
-
 
