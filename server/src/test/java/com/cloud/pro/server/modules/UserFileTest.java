@@ -1,32 +1,52 @@
 package com.cloud.pro.server.modules;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Assert;
 import com.cloud.pro.core.exception.BusinessException;
+import com.cloud.pro.core.utils.FileUtil;
 import com.cloud.pro.core.utils.IdUtil;
 import com.cloud.pro.server.enums.DelFlagEnum;
+import com.cloud.pro.server.enums.MergeFlagEnum;
 import com.cloud.pro.server.modules.context.file.DeleteFileContext;
+import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
+import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
+import com.cloud.pro.server.modules.context.file.FileUploadContext;
 import com.cloud.pro.server.modules.context.file.QueryFileListContext;
+import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
 import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
 import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.context.user.UserLoginContext;
 import com.cloud.pro.server.modules.context.user.UserRegisterContext;
 import com.cloud.pro.server.modules.entity.File;
+import com.cloud.pro.server.modules.entity.FileChunk;
+import com.cloud.pro.server.modules.service.FileChunkService;
 import com.cloud.pro.server.modules.service.FileService;
 import com.cloud.pro.server.modules.service.UserFileService;
 import com.cloud.pro.server.modules.service.UserService;
+import com.cloud.pro.server.modules.vo.FileChunkUploadVO;
+import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import com.cloud.pro.server.modules.vo.UserVO;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.commons.util.CollectionUtils;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 用户文件测试
@@ -42,6 +62,9 @@ public class UserFileTest {
 
     @Resource
     private FileService fileService;
+
+    @Resource
+    private FileChunkService fileChunkService;
 
     /**
      * 测试创建用户文件夹
@@ -217,7 +240,139 @@ public class UserFileTest {
         Assertions.assertTrue(secUploadSuccess);
     }
 
+    @Test
+    public void testUploadSuccess() {
+        Long userId = register();
+        UserVO userVO = getUserInfo(userId);
+
+        FileUploadContext context = new FileUploadContext();
+        MultipartFile file = generateMultipartFile();
+        context.setFilename(file.getOriginalFilename());
+        context.setIdentifier("123456");
+        context.setTotalSize(file.getSize());
+        context.setParentId(userVO.getRootFileId());
+        context.setFile(file);
+        context.setUserId(userId);
+        userFileService.upload(context);
+
+        QueryFileListContext queryFileListContext = new QueryFileListContext();
+        queryFileListContext.setParentId(userVO.getRootFileId());
+        queryFileListContext.setUserId(userId);
+        queryFileListContext.setDelFlag(DelFlagEnum.NO.getCode());
+        List<UserFileVO> fileList = userFileService.getFileList(queryFileListContext);
+        Assertions.assertFalse(CollectionUtil.isEmpty(fileList));
+        Assertions.assertEquals(fileList.size(), 1);
+    }
+
+    @Test
+    public void testGetUploadedChunks() {
+        Long userId = register();
+
+        FileChunk fileChunk = new FileChunk();
+        fileChunk.setId(IdUtil.get());
+        fileChunk.setIdentifier("123123123");
+        fileChunk.setRealPath("realPath");
+        fileChunk.setChunkNumber(1);
+        fileChunk.setExpirationTime(LocalDateTime.now().plusDays(1));
+        fileChunk.setCreateUser(userId);
+
+        boolean save = fileChunkService.save(fileChunk);
+        Assertions.assertTrue(save);
+
+        QueryUploadedChunksContext context = new QueryUploadedChunksContext();
+        context.setIdentifier("123123123");
+        context.setUserId(userId);
+        UploadedChunksVO vo = userFileService.getUploadedChunks(context);
+        Assertions.assertNotNull(vo);
+        Assertions.assertNotNull(vo.getUploadedChunks());
+        Assertions.assertEquals(vo.getUploadedChunks().size(), 1);
+    }
+
+    @Test
+    public void testUploadWithChunk() throws InterruptedException {
+        Long userId = register();
+        UserVO userInfo = getUserInfo(userId);
+        // 由于我们使用线程进行测试，在单元测试中当主线程运行结束时，会关闭SpringBoot容器，而不会等待子线程的执行
+        // 所以我们可以使用信号量来等待子线程执行结束
+        CountDownLatch countDownLatch = new CountDownLatch(10);
+
+        int totalChunks = 10;
+        // 文件分片上传
+        for (int j = 0; j < totalChunks; j++) {
+            ChunkUploader chunkUploader = new ChunkUploader(countDownLatch,
+                    j + 1,
+                    totalChunks,
+                    userFileService,
+                    userId,
+                    userInfo.getRootFileId());
+            chunkUploader.start();
+        }
+        countDownLatch.await();
+    }
+
     /**************************************private**************************************/
+
+    /**
+     * 文件分片上传器
+     */
+    @AllArgsConstructor
+    private class ChunkUploader extends Thread {
+        private CountDownLatch countDownLatch;
+
+        private Integer chunk;
+
+        private Integer chunks;
+
+        private UserFileService userFileService;
+
+        private Long userId;
+
+        private Long parentId;
+
+        /**
+         * 文件分片上传
+         * 根据上传的结果来调用文件分片合并
+         */
+        @Override
+        public void run() {
+            MultipartFile file = generateMultipartFile();
+            long totalSize = file.getSize() * chunks;
+            String filename = "test.txt";
+            String identifier = "123456789";
+            // 上传分片
+            FileChunkUploadContext fileChunkUploadContext = new FileChunkUploadContext();
+            fileChunkUploadContext.setFilename(filename);
+            fileChunkUploadContext.setIdentifier(identifier);
+            fileChunkUploadContext.setTotalChunks(chunks);
+            fileChunkUploadContext.setChunkNumber(chunk);
+            fileChunkUploadContext.setCurrentChunkSize(file.getSize());
+            fileChunkUploadContext.setTotalSize(totalSize);
+            fileChunkUploadContext.setFile(file);
+            fileChunkUploadContext.setUserId(userId);
+            FileChunkUploadVO fileChunkUploadVO = userFileService.chunkUpload(fileChunkUploadContext);
+
+            if (fileChunkUploadVO.getMergeFlag().equals(MergeFlagEnum.READY.getCode())) {
+                System.out.println("分片" + chunk + "检测到可以合并分片");
+
+                FileChunkMergeContext fileChunkMergeContext = new FileChunkMergeContext();
+                fileChunkMergeContext.setFilename(filename);
+                fileChunkMergeContext.setIdentifier(identifier);
+                fileChunkMergeContext.setTotalSize(totalSize);
+                fileChunkMergeContext.setParentId(parentId);
+                fileChunkMergeContext.setUserId(userId);
+                userFileService.mergeFile(fileChunkMergeContext);
+            }
+            countDownLatch.countDown();
+        }
+    }
+
+    private MultipartFile generateMultipartFile() {
+        MockMultipartFile file = new MockMultipartFile("filename",
+                "test.txt",
+                "multipart/form-data",
+                "test upload ".getBytes(StandardCharsets.UTF_8));
+        return file;
+    }
 
     private CreateFolderContext createFolderContext(String filename) {
         CreateFolderContext context = new CreateFolderContext();

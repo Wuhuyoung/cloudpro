@@ -13,25 +13,37 @@ import com.cloud.pro.server.enums.DelFlagEnum;
 import com.cloud.pro.server.enums.FileTypeEnum;
 import com.cloud.pro.server.enums.FolderFlagEnum;
 import com.cloud.pro.server.modules.context.file.DeleteFileContext;
+import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
+import com.cloud.pro.server.modules.context.file.FileChunkSaveContext;
+import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
+import com.cloud.pro.server.modules.context.file.FileSaveContext;
+import com.cloud.pro.server.modules.context.file.FileUploadContext;
 import com.cloud.pro.server.modules.context.file.QueryFileListContext;
+import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
 import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
 import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
+import com.cloud.pro.server.modules.converter.FileConverter;
 import com.cloud.pro.server.modules.entity.File;
+import com.cloud.pro.server.modules.entity.FileChunk;
 import com.cloud.pro.server.modules.entity.UserFile;
+import com.cloud.pro.server.modules.mapper.UserFileMapper;
+import com.cloud.pro.server.modules.service.FileChunkService;
 import com.cloud.pro.server.modules.service.FileService;
 import com.cloud.pro.server.modules.service.UserFileService;
-import com.cloud.pro.server.modules.mapper.UserFileMapper;
+import com.cloud.pro.server.modules.vo.FileChunkUploadVO;
+import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -48,10 +60,16 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
         implements UserFileService, ApplicationContextAware {
 
     @Resource
+    private FileService fileService;
+
+    @Resource
+    private FileChunkService fileChunkService;
+
+    @Resource
     private UserFileMapper userFileMapper;
 
     @Resource
-    private FileService fileService;
+    private FileConverter fileConverter;
 
     private static ApplicationContext applicationContext;
 
@@ -120,14 +138,14 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
 
     /**
      * 批量删除文件
-     * @param deleteFileContext
+     * @param context
      */
     @Override
-    public void deleteFile(DeleteFileContext deleteFileContext) {
+    public void deleteFile(DeleteFileContext context) {
         // 1.校验删除的条件
-        checkFileDeleteCondition(deleteFileContext);
+        checkFileDeleteCondition(context);
         // 2.执行批量删除
-        doDeleteFile(deleteFileContext);
+        doDeleteFile(context);
     }
 
     /**
@@ -155,20 +173,84 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
     }
 
     /**
-     * 通过文件的唯一标识查找文件
-     * @param identifier
+     * 单文件上传
+     * @param context
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void upload(FileUploadContext context) {
+        // 1.上传文件并保存实体文件的记录
+        FileSaveContext fileSaveContext = fileConverter.fileUploadContext2FileSaveContext(context);
+        fileService.saveFile(fileSaveContext);
+        File record = fileSaveContext.getRecord();
+        // 2.保存用户文件的关系记录
+        saveUserFile(context.getParentId(),
+                fileSaveContext.getFilename(),
+                FolderFlagEnum.NO,
+                FileTypeEnum.getFileTypeCode(FileUtil.getFileSuffix(context.getFilename())),
+                record.getFileId(),
+                context.getUserId(),
+                record.getFileSizeDesc());
+    }
+
+    /**
+     * 分片上传
+     * @param context
      * @return
      */
-    private File getFileByIdentifier(String identifier) {
-        LambdaUpdateWrapper<File> lqw = new LambdaUpdateWrapper<>();
-        lqw.eq(File::getIdentifier, identifier);
-        //todo 这里可能有其他用户在并发查询，然后都没有查到唯一标识，最后会插入两条具有相同identifier的物理文件，秒传业务需要加锁保证线程安全
-        // 方法一：查询时加锁，如果没有查到identifier就先向数据库中添加一个identifier？这里逻辑有些问题，性能不高
-        // 方法二：可以用Redis先存储一下identifier：先查Redis(需加锁保证线程安全)，有相同的identifier就实现秒传，没有就保存到Redis中，释放锁，再去数据库中查(此时就不用加锁了)
-        //  数据库中有就可以秒传，没有就不能
-        // 这里的业务逻辑考虑一下如何保证 性能和线程安全
+    @Override
+    public FileChunkUploadVO chunkUpload(FileChunkUploadContext context) {
+        // 以下逻辑由FileChunkService实现
+        // 1.上传实体记录
+        // 2.保存分片文件记录
+        // 3.校验是否全部分片上传完成
+        FileChunkSaveContext fileChunkSaveContext = fileConverter.fileChunkUploadContext2FileChunkSaveContext(context);
+        fileChunkService.saveChunkFile(fileChunkSaveContext);
+        FileChunkUploadVO vo = new FileChunkUploadVO();
+        vo.setMergeFlag(fileChunkSaveContext.getMergeFlagEnum().getCode());
+        return vo;
+    }
 
-        return fileService.getOne(lqw);
+    /**
+     * 查询已上传的文件分片列表
+     * @param context
+     * @return
+     */
+    @Override
+    public UploadedChunksVO getUploadedChunks(QueryUploadedChunksContext context) {
+        LambdaQueryWrapper<FileChunk> lqw = new LambdaQueryWrapper<>();
+        // 只查询其中chunk_number这个字段
+        lqw.select(FileChunk::getChunkNumber);
+        lqw.eq(FileChunk::getIdentifier, context.getIdentifier());
+        lqw.eq(FileChunk::getCreateUser, context.getUserId());
+        lqw.gt(FileChunk::getExpirationTime, LocalDateTime.now());
+
+        // listObjs()适用于只需要查询一个字段，listMaps()适用于需要查询其中的多个字段
+        List<Integer> uploadedChunks = fileChunkService.listObjs(lqw, value -> Integer.parseInt(String.valueOf(value)));
+
+        UploadedChunksVO vo = new UploadedChunksVO();
+        vo.setUploadedChunks(uploadedChunks);
+        return vo;
+    }
+
+    /**
+     * 文件分片合并
+     * @param context
+     */
+    @Override
+    @Transactional
+    public void mergeFile(FileChunkMergeContext context) {
+        // 1.合并文件分片，保存物理文件记录
+        fileService.mergeFileChunkAndSaveFile(context);
+
+        // 2.保存用户文件关系映射
+        saveUserFile(context.getParentId(),
+                context.getFilename(),
+                FolderFlagEnum.NO,
+                FileTypeEnum.getFileTypeCode(FileUtil.getFileSuffix(context.getFilename())),
+                context.getRecord().getFileId(),
+                context.getUserId(),
+                context.getRecord().getFileSizeDesc());
     }
 
     /**********************************private**********************************/
@@ -399,6 +481,23 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
         childrenContext.setFileIdList(childrenFileIdList);
         childrenContext.setUserId(userId);
         return childrenContext;
+    }
+
+    /**
+     * 通过文件的唯一标识查找文件
+     * @param identifier
+     * @return
+     */
+    private File getFileByIdentifier(String identifier) {
+        LambdaUpdateWrapper<File> lqw = new LambdaUpdateWrapper<>();
+        lqw.eq(File::getIdentifier, identifier);
+        //todo 这里可能有其他用户在并发查询，然后都没有查到唯一标识，最后会插入两条具有相同identifier的物理文件，秒传业务需要加锁保证线程安全
+        // 方法一：查询时加锁，如果没有查到identifier就先向数据库中添加一个identifier？这里逻辑有些问题，性能不高
+        // 方法二：可以用Redis先存储一下identifier：先查Redis(需加锁保证线程安全)，有相同的identifier就实现秒传，没有就保存到Redis中，释放锁，再去数据库中查(此时就不用加锁了)
+        //  数据库中有就可以秒传，没有就不能
+        // 这里的业务逻辑考虑一下如何保证 性能和线程安全
+
+        return fileService.getOne(lqw);
     }
 
 }

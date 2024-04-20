@@ -7,16 +7,26 @@ import com.cloud.pro.server.common.utils.UserIdUtil;
 import com.cloud.pro.server.constants.FileConstants;
 import com.cloud.pro.server.enums.DelFlagEnum;
 import com.cloud.pro.server.modules.context.file.DeleteFileContext;
+import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
+import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
+import com.cloud.pro.server.modules.context.file.FileUploadContext;
 import com.cloud.pro.server.modules.context.file.QueryFileListContext;
+import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
 import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
 import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.converter.FileConverter;
 import com.cloud.pro.server.modules.po.file.CreateFolderPO;
 import com.cloud.pro.server.modules.po.file.DeleteFilePO;
+import com.cloud.pro.server.modules.po.file.FileChunkMergePO;
+import com.cloud.pro.server.modules.po.file.FileChunkUploadPO;
+import com.cloud.pro.server.modules.po.file.FileUploadPO;
+import com.cloud.pro.server.modules.po.file.QueryUploadedChunksPO;
 import com.cloud.pro.server.modules.po.file.SecUploadFilePO;
 import com.cloud.pro.server.modules.po.file.UpdateFilenamePO;
 import com.cloud.pro.server.modules.service.UserFileService;
+import com.cloud.pro.server.modules.vo.FileChunkUploadVO;
+import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.Api;
@@ -125,5 +135,55 @@ public class FileController {
             return Result.success();
         }
         return Result.fail();
+    }
+
+    /**
+     * 单文件上传
+     * @param fileUploadPO
+     * @return
+     */
+    @PostMapping("/file/upload")
+    // 前端传来的Content-Type: multipart/form-data，而@RequestBody的参数只能设置为 Content-Type: application/json
+    // 所以这里不能在参数前加上 @RequestBody
+    public Result<?> upload(@Validated FileUploadPO fileUploadPO) {
+        FileUploadContext fileUploadContext = fileConverter.fileUploadPO2Context(fileUploadPO);
+        userFileService.upload(fileUploadContext);
+        return Result.success();
+    }
+
+    /**
+     * 文件分片上传
+     * @param fileChunkUploadPO
+     * @return
+     */
+    @PostMapping("/file/chunk-upload")
+    public Result<FileChunkUploadVO> chunkUpload(@Validated FileChunkUploadPO fileChunkUploadPO) {
+        FileChunkUploadContext context = fileConverter.fileChunkUploadPO2Context(fileChunkUploadPO);
+        FileChunkUploadVO vo = userFileService.chunkUpload(context);
+        return Result.data(vo);
+    }
+
+    /**
+     * 查询已上传的文件分片列表
+     * @param queryUploadedChunksPO
+     * @return
+     */
+    @GetMapping("/file/chunk-upload")
+    public Result<UploadedChunksVO> getUploadedChunks(@Validated QueryUploadedChunksPO queryUploadedChunksPO) {
+        QueryUploadedChunksContext context = fileConverter.queryUploadedChunksPO2Context(queryUploadedChunksPO);
+        UploadedChunksVO vo = userFileService.getUploadedChunks(context);
+        return Result.data(vo);
+    }
+
+    /**
+     * 文件分片合并
+     * @param fileChunkMergePO
+     * @return
+     */
+    @PostMapping("/file/merge")
+    public Result<?> mergeFile(@Validated @RequestBody FileChunkMergePO fileChunkMergePO) {
+        FileChunkMergeContext context = fileConverter.fileChunkMergePO2Context(fileChunkMergePO);
+        userFileService.mergeFile(context);
+        return Result.success();
     }
 }

@@ -1,5 +1,6 @@
 package com.cloud.pro.server.modules.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -10,52 +11,47 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 用户信息表
- * @TableName cloud_pro_user
+ * 文件分片信息表
+ * @TableName cloud_pro_file_chunk
  */
-@TableName(value ="cloud_pro_user")
+@TableName(value ="cloud_pro_file_chunk")
 @Data
-public class User implements Serializable {
+public class FileChunk implements Serializable {
     /**
-     * 用户id
+     * 主键
      */
-    @TableId
-    private Long userId;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
-     * 用户名
+     * 文件唯一标识
      */
-    private String username;
+    private String identifier;
 
     /**
-     * 密码
+     * 分片真实的存储路径
      */
-    private String password;
+    private String realPath;
 
     /**
-     * 随机盐值
+     * 分片编号
      */
-    private String salt;
+    private Integer chunkNumber;
 
     /**
-     * 密保问题
+     * 过期时间
      */
-    private String question;
+    private LocalDateTime expirationTime;
 
     /**
-     * 密保答案
+     * 创建人
      */
-    private String answer;
+    private Long createUser;
 
     /**
      * 创建时间
      */
     private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

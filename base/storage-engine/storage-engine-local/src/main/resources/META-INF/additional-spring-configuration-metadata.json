@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "com.cloud.pro.storage.engine.local.root-file-path",
+      "type": "java.lang.String",
+      "description": "文件上传实际存放路径的根目录",
+      "defaultValue": "@see com.cloud.pro.core.utils.FileUtil.generateDefaultStoreFileRealPath"
+    },
+    {
+      "name": "com.cloud.pro.storage.engine.local.root-file-chun-path",
+      "type": "java.lang.String",
+      "description": "实际存放文件分片的路径的前缀",
+      "defaultValue": "@see com.cloud.pro.core.utils.FileUtil.generateDefaultStoreFileChunkRealPath"
+    }
+  ]
+}

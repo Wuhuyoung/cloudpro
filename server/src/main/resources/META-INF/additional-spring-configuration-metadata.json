@@ -1,0 +1,8 @@
+{
+  "properties": [{
+    "name": "com.cloud.pro.server.chunk-file-expiration-days",
+    "type": "java.lang.Integer",
+    "description": "文件分片的过期天数",
+    "defaultValue": 1
+  }]
+}

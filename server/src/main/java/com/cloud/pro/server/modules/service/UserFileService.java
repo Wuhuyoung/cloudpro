@@ -1,12 +1,18 @@
 package com.cloud.pro.server.modules.service;
 
 import com.cloud.pro.server.modules.context.file.DeleteFileContext;
+import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
+import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
+import com.cloud.pro.server.modules.context.file.FileUploadContext;
 import com.cloud.pro.server.modules.context.file.QueryFileListContext;
+import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
 import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
 import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.entity.UserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cloud.pro.server.modules.vo.FileChunkUploadVO;
+import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 
 import java.util.List;
@@ -52,8 +58,34 @@ public interface UserFileService extends IService<UserFile> {
 
     /**
      * 文件秒传
-     * @param secUploadFileContext
+     * @param context
      * @return
      */
-    boolean secUpload(SecUploadFileContext secUploadFileContext);
+    boolean secUpload(SecUploadFileContext context);
+
+    /**
+     * 单文件上传
+     * @param context
+     */
+    void upload(FileUploadContext context);
+
+    /**
+     * 分片上传
+     * @param context
+     * @return
+     */
+    FileChunkUploadVO chunkUpload(FileChunkUploadContext context);
+
+    /**
+     * 查询已上传的文件分片列表
+     * @param context
+     * @return
+     */
+    UploadedChunksVO getUploadedChunks(QueryUploadedChunksContext context);
+
+    /**
+     * 文件分片合并
+     * @param context
+     */
+    void mergeFile(FileChunkMergeContext context);
 }

@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import lombok.Data;
 
 /**
@@ -69,7 +71,7 @@ public class UserFile implements Serializable {
     /**
      * 创建时间
      */
-    private LocalDate createTime;
+    private LocalDateTime createTime;
 
     /**
      * 更新人
@@ -79,7 +81,7 @@ public class UserFile implements Serializable {
     /**
      * 更新时间
      */
-    private LocalDate updateTime;
+    private LocalDateTime updateTime;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

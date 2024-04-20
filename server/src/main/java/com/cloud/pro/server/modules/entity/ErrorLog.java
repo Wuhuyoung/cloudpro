@@ -1,56 +1,51 @@
 package com.cloud.pro.server.modules.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import lombok.Data;
 
 /**
- * 用户信息表
- * @TableName cloud_pro_user
+ * 错误日志表
+ * @TableName cloud_pro_error_log
  */
-@TableName(value ="cloud_pro_user")
+@TableName(value ="cloud_pro_error_log")
 @Data
-public class User implements Serializable {
+public class ErrorLog implements Serializable {
     /**
-     * 用户id
+     * 主键
      */
-    @TableId
-    private Long userId;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
-     * 用户名
+     * 日志内容
      */
-    private String username;
+    private String logContent;
 
     /**
-     * 密码
+     * 日志状态：0 未处理 1 已处理
      */
-    private String password;
+    private Integer logStatus;
 
     /**
-     * 随机盐值
+     * 创建人
      */
-    private String salt;
-
-    /**
-     * 密保问题
-     */
-    private String question;
-
-    /**
-     * 密保答案
-     */
-    private String answer;
+    private Long createUser;
 
     /**
      * 创建时间
      */
     private LocalDateTime createTime;
+
+    /**
+     * 更新人
+     */
+    private Long updateUser;
 
     /**
      * 更新时间
