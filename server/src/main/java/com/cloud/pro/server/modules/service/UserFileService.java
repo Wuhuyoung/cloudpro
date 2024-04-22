@@ -1,17 +1,13 @@
 package com.cloud.pro.server.modules.service;
 
-import com.cloud.pro.server.modules.context.file.DeleteFileContext;
-import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
-import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
-import com.cloud.pro.server.modules.context.file.FileUploadContext;
-import com.cloud.pro.server.modules.context.file.QueryFileListContext;
-import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
-import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
-import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
+import com.cloud.pro.server.modules.context.file.*;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.entity.UserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cloud.pro.server.modules.vo.BreadcrumbVO;
 import com.cloud.pro.server.modules.vo.FileChunkUploadVO;
+import com.cloud.pro.server.modules.vo.FileSearchResultVO;
+import com.cloud.pro.server.modules.vo.FolderTreeNodeVO;
 import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 
@@ -88,4 +84,49 @@ public interface UserFileService extends IService<UserFile> {
      * @param context
      */
     void mergeFile(FileChunkMergeContext context);
+
+    /**
+     * 文件下载
+     * @param context
+     */
+    void download(FileDownloadContext context);
+
+    /**
+     * 文件预览
+     * @param context
+     */
+    void preview(FilePreviewContext context);
+
+    /**
+     * 查询文件夹树
+     * @param context
+     * @return
+     */
+    List<FolderTreeNodeVO> getFolderTree(QueryFolderTreeContext context);
+
+    /**
+     * 文件转移
+     * @param context
+     */
+    void transfer(TransferFileContext context);
+
+    /**
+     * 文件复制
+     * @param context
+     */
+    void copy(CopyFileContext context);
+
+    /**
+     * 文件搜索
+     * @param context
+     * @return
+     */
+    List<FileSearchResultVO> search(FileSearchContext context);
+
+    /**
+     * 查询面包屑列表
+     * @param context
+     * @return
+     */
+    List<BreadcrumbVO> getBreadcrumbs(QueryBreadcrumbsContext context);
 }

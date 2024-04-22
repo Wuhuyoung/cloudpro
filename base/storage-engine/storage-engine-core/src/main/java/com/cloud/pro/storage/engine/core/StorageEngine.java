@@ -2,6 +2,7 @@ package com.cloud.pro.storage.engine.core;
 
 import com.cloud.pro.storage.engine.core.context.DeleteFileContext;
 import com.cloud.pro.storage.engine.core.context.MergeFileContext;
+import com.cloud.pro.storage.engine.core.context.ReadFileContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileChunkContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileContext;
 
@@ -39,4 +40,11 @@ public interface StorageEngine {
      * @throws IOException
      */
     void mergeFile(MergeFileContext context) throws IOException;
+
+    /**
+     * 读取文件内容写入到输出流中
+     * @param context
+     * @throws IOException
+     */
+    void readFile(ReadFileContext context) throws IOException;
 }

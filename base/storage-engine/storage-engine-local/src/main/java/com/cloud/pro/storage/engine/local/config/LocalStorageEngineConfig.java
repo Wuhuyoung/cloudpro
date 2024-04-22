@@ -5,6 +5,9 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+/**
+ * 本地文件存储引擎配置类
+ */
 @Component
 @ConfigurationProperties(prefix = "com.cloud.pro.storage.engine.local")
 @Data

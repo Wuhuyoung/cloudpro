@@ -6,10 +6,12 @@ import com.cloud.pro.server.modules.context.file.FileChunkSaveContext;
 import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
 import com.cloud.pro.server.modules.context.file.FileSaveContext;
 import com.cloud.pro.server.modules.context.file.FileUploadContext;
+import com.cloud.pro.server.modules.context.file.QueryBreadcrumbsContext;
 import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
 import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
 import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
+import com.cloud.pro.server.modules.entity.UserFile;
 import com.cloud.pro.server.modules.po.file.CreateFolderPO;
 import com.cloud.pro.server.modules.po.file.DeleteFilePO;
 import com.cloud.pro.server.modules.po.file.FileChunkMergePO;
@@ -18,6 +20,7 @@ import com.cloud.pro.server.modules.po.file.FileUploadPO;
 import com.cloud.pro.server.modules.po.file.QueryUploadedChunksPO;
 import com.cloud.pro.server.modules.po.file.SecUploadFilePO;
 import com.cloud.pro.server.modules.po.file.UpdateFilenamePO;
+import com.cloud.pro.server.modules.vo.BreadcrumbVO;
 import com.cloud.pro.storage.engine.core.context.StoreFileChunkContext;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -64,4 +67,8 @@ public interface FileConverter {
     @Mapping(target = "userId", expression = "java(com.cloud.pro.server.common.utils.UserIdUtil.get())")
     @Mapping(target = "parentId", expression = "java(com.cloud.pro.core.utils.IdUtil.decrypt(fileChunkMergePO.getParentId()))")
     FileChunkMergeContext fileChunkMergePO2Context(FileChunkMergePO fileChunkMergePO);
+
+    @Mapping(source = "fileId", target = "id")
+    @Mapping(source = "filename", target = "name")
+    BreadcrumbVO userFile2BreadcrumbVO(UserFile userFile);
 }

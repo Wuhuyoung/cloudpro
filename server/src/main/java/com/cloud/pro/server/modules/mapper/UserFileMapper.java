@@ -1,8 +1,10 @@
 package com.cloud.pro.server.modules.mapper;
 
+import com.cloud.pro.server.modules.context.file.FileSearchContext;
 import com.cloud.pro.server.modules.context.file.QueryFileListContext;
 import com.cloud.pro.server.modules.entity.UserFile;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cloud.pro.server.modules.vo.FileSearchResultVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import org.apache.ibatis.annotations.Param;
 
@@ -16,7 +18,19 @@ import java.util.List;
 */
 public interface UserFileMapper extends BaseMapper<UserFile> {
 
+    /**
+     * 查询用户的文件列表
+     * @param queryFileListContext
+     * @return
+     */
     List<UserFileVO> selectFileList(@Param("context") QueryFileListContext queryFileListContext);
+
+    /**
+     * 文件搜索
+     * @param context
+     * @return
+     */
+    List<FileSearchResultVO> searchFile(@Param("context") FileSearchContext context);
 }
 
 

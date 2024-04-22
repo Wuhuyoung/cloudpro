@@ -50,4 +50,23 @@
                     </foreach>
                 </if>
     </select>
+    <select id="searchFile" resultType="com.cloud.pro.server.modules.vo.FileSearchResultVO">
+        select file_id as fileId,
+               parent_id as parentId,
+               filename as filename,
+               folder_flag as folderFlag,
+               file_size_desc as fileSizeDesc,
+               file_type as fileType,
+               update_time as updateTime
+        from cloud_pro_user_file
+        where user_id = #{context.userId}
+          and del_flag = 0
+          and filename like concat(#{context.keyword}, '%')
+        <if test="context.fileTypeArray != null">
+            and file_type in
+            <foreach collection="context.fileTypeArray" open="(" close=")" separator="," item="item">
+                #{item}
+            </foreach>
+        </if>
+    </select>
 </mapper>

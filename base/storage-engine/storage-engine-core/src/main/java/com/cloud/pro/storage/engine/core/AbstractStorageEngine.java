@@ -2,6 +2,7 @@ package com.cloud.pro.storage.engine.core;
 
 import com.cloud.pro.storage.engine.core.context.DeleteFileContext;
 import com.cloud.pro.storage.engine.core.context.MergeFileContext;
+import com.cloud.pro.storage.engine.core.context.ReadFileContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileChunkContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileContext;
 import org.apache.commons.lang3.StringUtils;
@@ -108,4 +109,25 @@ public abstract class AbstractStorageEngine implements StorageEngine {
      * @throws IOException
      */
     protected abstract void doMergeFile(MergeFileContext context) throws IOException;
+
+    /**
+     * 读取文件内容写入到输出流中
+     * @param context
+     * @throws IOException
+     */
+    @Override
+    public void readFile(ReadFileContext context) throws IOException {
+        // 1.参数校验
+        Assertions.assertTrue(StringUtils.isNotBlank(context.getRealPath()), "文件的真实存储路径不能为空");
+        Assertions.assertTrue(Objects.nonNull(context.getOutputStream()), "输出流不能为空");
+        // 2.执行写入操作
+        doReadFile(context);
+    }
+
+    /**
+     * 执行文件写入输出流中，，由具体子类调用不同存储引擎实现
+     * @param context
+     * @throws IOException
+     */
+    protected abstract void doReadFile(ReadFileContext context) throws IOException;
 }

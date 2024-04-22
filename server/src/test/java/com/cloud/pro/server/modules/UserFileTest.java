@@ -8,13 +8,18 @@ import com.cloud.pro.core.utils.FileUtil;
 import com.cloud.pro.core.utils.IdUtil;
 import com.cloud.pro.server.enums.DelFlagEnum;
 import com.cloud.pro.server.enums.MergeFlagEnum;
+import com.cloud.pro.server.modules.context.file.CopyFileContext;
 import com.cloud.pro.server.modules.context.file.DeleteFileContext;
 import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
 import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
+import com.cloud.pro.server.modules.context.file.FileSearchContext;
 import com.cloud.pro.server.modules.context.file.FileUploadContext;
+import com.cloud.pro.server.modules.context.file.QueryBreadcrumbsContext;
 import com.cloud.pro.server.modules.context.file.QueryFileListContext;
+import com.cloud.pro.server.modules.context.file.QueryFolderTreeContext;
 import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
 import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
+import com.cloud.pro.server.modules.context.file.TransferFileContext;
 import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.context.user.UserLoginContext;
@@ -25,19 +30,23 @@ import com.cloud.pro.server.modules.service.FileChunkService;
 import com.cloud.pro.server.modules.service.FileService;
 import com.cloud.pro.server.modules.service.UserFileService;
 import com.cloud.pro.server.modules.service.UserService;
+import com.cloud.pro.server.modules.vo.BreadcrumbVO;
 import com.cloud.pro.server.modules.vo.FileChunkUploadVO;
+import com.cloud.pro.server.modules.vo.FileSearchResultVO;
+import com.cloud.pro.server.modules.vo.FolderTreeNodeVO;
 import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import com.cloud.pro.server.modules.vo.UserVO;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.util.CollectionUtils;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -46,6 +55,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -308,6 +318,171 @@ public class UserFileTest {
             chunkUploader.start();
         }
         countDownLatch.await();
+    }
+
+    @Test
+    public void testGetFolderTree() {
+        Long userId = register();
+        UserVO userVO = getUserInfo(userId);
+
+        CreateFolderContext context = new CreateFolderContext();
+        context.setParentId(userVO.getRootFileId());
+        context.setUserId(userId);
+        context.setFolderName("folder-name-1");
+
+        Long fileId = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId);
+
+        context.setFolderName("folder-name-2");
+        fileId = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId);
+
+        context.setFolderName("folder-name-2-1");
+        context.setParentId(fileId);
+        fileId = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId);
+
+        QueryFolderTreeContext queryFolderTreeContext = new QueryFolderTreeContext();
+        queryFolderTreeContext.setUserId(userId);
+        List<FolderTreeNodeVO> folderTree = userFileService.getFolderTree(queryFolderTreeContext);
+        Assertions.assertEquals(folderTree.size(), 1);
+        folderTree.forEach(FolderTreeNodeVO::print);
+    }
+
+    @Test
+    public void testFileTransfer() {
+        Long userId = register();
+        UserVO userVO = getUserInfo(userId);
+        // 创建文件夹
+        CreateFolderContext context = new CreateFolderContext();
+        context.setParentId(userVO.getRootFileId());
+        context.setUserId(userId);
+        context.setFolderName("folder-name-1");
+        Long fileId1 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId1);
+        context.setFolderName("folder-name-2");
+        Long fileId2 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId2);
+        context.setFolderName("folder-name-2-1");
+        context.setParentId(fileId2);
+        Long fileId21 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId21);
+
+        // 转移文件夹2到2-1下，失败
+        TransferFileContext transferFileContext = new TransferFileContext();
+        transferFileContext.setFileIdList(Collections.singletonList(fileId2));
+        transferFileContext.setTargetParentId(fileId21);
+        transferFileContext.setUserId(userId);
+        Exception exception = Assertions.assertThrows(BusinessException.class, () -> {
+            userFileService.transfer(transferFileContext);
+        });
+        Assert.isTrue("目标文件夹不能是选中文件列表或其子文件夹".equals(exception.getMessage()));
+
+        // 转移文件夹1到2-1下
+        transferFileContext.setFileIdList(Collections.singletonList(fileId1));
+        userFileService.transfer(transferFileContext);
+        // 查询文件夹树查看结果
+        QueryFolderTreeContext queryFolderTreeContext = new QueryFolderTreeContext();
+        queryFolderTreeContext.setUserId(userId);
+        List<FolderTreeNodeVO> folderTree = userFileService.getFolderTree(queryFolderTreeContext);
+        Assertions.assertEquals(folderTree.size(), 1);
+        folderTree.forEach(FolderTreeNodeVO::print);
+    }
+
+    @Test
+    public void testFileCopy() {
+        Long userId = register();
+        UserVO userVO = getUserInfo(userId);
+        // 创建文件夹
+        CreateFolderContext context = new CreateFolderContext();
+        context.setParentId(userVO.getRootFileId());
+        context.setUserId(userId);
+        context.setFolderName("folder-name-1");
+        Long fileId1 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId1);
+        context.setFolderName("folder-name-2");
+        Long fileId2 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId2);
+        context.setFolderName("folder-name-2-1");
+        context.setParentId(fileId2);
+        Long fileId21 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId21);
+
+        // 将文件夹2复制到2-1下
+        CopyFileContext copyFileContext = new CopyFileContext();
+        copyFileContext.setFileIdList(Lists.newArrayList(fileId2));
+        copyFileContext.setTargetParentId(fileId21);
+        copyFileContext.setUserId(userId);
+        Exception exception = Assertions.assertThrows(BusinessException.class, () -> {
+            userFileService.copy(copyFileContext);
+        });
+        Assert.isTrue("目标文件夹不能是选中文件列表或其子文件夹".equals(exception.getMessage()));
+
+        // 将文件夹2复制到文件夹1下
+        copyFileContext.setFileIdList(Lists.newArrayList(fileId2));
+        copyFileContext.setTargetParentId(fileId1);
+        userFileService.copy(copyFileContext);
+
+        // 查询文件夹树查看结果
+        QueryFolderTreeContext queryFolderTreeContext = new QueryFolderTreeContext();
+        queryFolderTreeContext.setUserId(userId);
+        List<FolderTreeNodeVO> folderTree = userFileService.getFolderTree(queryFolderTreeContext);
+        Assertions.assertEquals(folderTree.size(), 1);
+        folderTree.forEach(FolderTreeNodeVO::print);
+    }
+
+    @Test
+    public void testFileSearch() {
+        Long userId = register();
+        UserVO userVO = getUserInfo(userId);
+        // 创建文件夹
+        CreateFolderContext context = new CreateFolderContext();
+        context.setParentId(userVO.getRootFileId());
+        context.setUserId(userId);
+        context.setFolderName("folder-name-1");
+        Long fileId1 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId1);
+        context.setFolderName("folder-name-2");
+        Long fileId2 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId2);
+
+        FileSearchContext fileSearchContext = new FileSearchContext();
+        fileSearchContext.setKeyword("folder-name");
+        fileSearchContext.setUserId(userId);
+        List<FileSearchResultVO> searchResult = userFileService.search(fileSearchContext);
+        Assertions.assertTrue(CollectionUtil.isNotEmpty(searchResult));
+
+        fileSearchContext.setKeyword("name-1");
+        searchResult = userFileService.search(fileSearchContext);
+        Assertions.assertTrue(CollectionUtil.isEmpty(searchResult));
+    }
+
+    @Test
+    public void testGetBreadcrumbs() {
+        Long userId = register();
+        UserVO userVO = getUserInfo(userId);
+        // 创建文件夹 1/2/2-1
+        CreateFolderContext context = new CreateFolderContext();
+        context.setParentId(userVO.getRootFileId());
+        context.setUserId(userId);
+        context.setFolderName("folder-name-1");
+        Long fileId1 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId1);
+        context.setFolderName("folder-name-2");
+        context.setParentId(fileId1);
+        Long fileId2 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId2);
+        context.setFolderName("folder-name-2-1");
+        context.setParentId(fileId2);
+        Long fileId21 = userFileService.createFolder(context);
+        Assertions.assertNotNull(fileId21);
+
+        QueryBreadcrumbsContext queryBreadcrumbsContext = new QueryBreadcrumbsContext();
+        queryBreadcrumbsContext.setFileId(fileId21);
+        queryBreadcrumbsContext.setUserId(userId);
+        List<BreadcrumbVO> breadcrumbs = userFileService.getBreadcrumbs(queryBreadcrumbsContext);
+        Assertions.assertTrue(CollectionUtil.isNotEmpty(breadcrumbs));
+        Assertions.assertEquals(breadcrumbs.size(), 4);
     }
 
     /**************************************private**************************************/

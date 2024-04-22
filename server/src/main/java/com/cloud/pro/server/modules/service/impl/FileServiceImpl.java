@@ -2,12 +2,11 @@ package com.cloud.pro.server.modules.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.pro.core.exception.BusinessException;
 import com.cloud.pro.core.utils.FileUtil;
 import com.cloud.pro.core.utils.IdUtil;
-import com.cloud.pro.server.common.event.ErrorLogEvent;
+import com.cloud.pro.server.common.event.log.ErrorLogEvent;
 import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
 import com.cloud.pro.server.modules.context.file.FileSaveContext;
 import com.cloud.pro.server.modules.context.file.QueryRealFileListContext;
@@ -65,7 +64,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File>
     public List<File> getFileList(QueryRealFileListContext context) {
         Long userId = context.getUserId();
         String identifier = context.getIdentifier();
-        LambdaUpdateWrapper<File> lqw = new LambdaUpdateWrapper<>();
+        LambdaQueryWrapper<File> lqw = new LambdaQueryWrapper<>();
         lqw.eq(Objects.nonNull(userId), File::getCreateUser, userId);
         lqw.eq(StringUtils.isNotBlank(identifier), File::getIdentifier, identifier);
         return this.list(lqw);
@@ -175,6 +174,8 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File>
         record.setFileSize(String.valueOf(totalSize));
         record.setFileSizeDesc(FileUtil.byteCountToDisplaySize(totalSize));
         record.setFileSuffix(FileUtil.getFileSuffix(filename));
+        // bugfix 获取文件的预览类型
+        record.setFilePreviewContentType(FileUtil.getContentType(realPath));
         record.setIdentifier(identifier);
         record.setCreateUser(userId);
 

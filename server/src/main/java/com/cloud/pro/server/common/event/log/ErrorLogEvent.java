@@ -1,6 +1,5 @@
-package com.cloud.pro.server.common.event;
+package com.cloud.pro.server.common.event.log;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,6 +14,8 @@ import org.springframework.context.ApplicationEvent;
 @EqualsAndHashCode
 @ToString
 public class ErrorLogEvent extends ApplicationEvent {
+    private static final long serialVersionUID = -542287519277426799L;
+
     /**
      * 错误日志
      */

@@ -1,5 +1,6 @@
 package com.cloud.pro.server.modules.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.pro.core.exception.BusinessException;
@@ -91,7 +92,7 @@ public class FileChunkServiceImpl extends ServiceImpl<FileChunkMapper, FileChunk
      * @param context
      */
     private void doJudgeMergeFile(FileChunkSaveContext context) {
-        LambdaUpdateWrapper<FileChunk> lqw = new LambdaUpdateWrapper<>();
+        LambdaQueryWrapper<FileChunk> lqw = new LambdaQueryWrapper<>();
         lqw.eq(FileChunk::getIdentifier, context.getIdentifier());
         lqw.eq(FileChunk::getCreateUser, context.getUserId());
         long count = this.count(lqw);

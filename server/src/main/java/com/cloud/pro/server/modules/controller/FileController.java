@@ -6,30 +6,30 @@ import com.cloud.pro.core.utils.IdUtil;
 import com.cloud.pro.server.common.utils.UserIdUtil;
 import com.cloud.pro.server.constants.FileConstants;
 import com.cloud.pro.server.enums.DelFlagEnum;
-import com.cloud.pro.server.modules.context.file.DeleteFileContext;
-import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
-import com.cloud.pro.server.modules.context.file.FileChunkUploadContext;
-import com.cloud.pro.server.modules.context.file.FileUploadContext;
-import com.cloud.pro.server.modules.context.file.QueryFileListContext;
-import com.cloud.pro.server.modules.context.file.QueryUploadedChunksContext;
-import com.cloud.pro.server.modules.context.file.SecUploadFileContext;
-import com.cloud.pro.server.modules.context.file.UpdateFilenameContext;
+import com.cloud.pro.server.modules.context.file.*;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.converter.FileConverter;
+import com.cloud.pro.server.modules.po.file.CopyFilePO;
 import com.cloud.pro.server.modules.po.file.CreateFolderPO;
 import com.cloud.pro.server.modules.po.file.DeleteFilePO;
 import com.cloud.pro.server.modules.po.file.FileChunkMergePO;
 import com.cloud.pro.server.modules.po.file.FileChunkUploadPO;
+import com.cloud.pro.server.modules.po.file.FileSearchPO;
 import com.cloud.pro.server.modules.po.file.FileUploadPO;
 import com.cloud.pro.server.modules.po.file.QueryUploadedChunksPO;
 import com.cloud.pro.server.modules.po.file.SecUploadFilePO;
+import com.cloud.pro.server.modules.po.file.TransferFilePO;
 import com.cloud.pro.server.modules.po.file.UpdateFilenamePO;
 import com.cloud.pro.server.modules.service.UserFileService;
+import com.cloud.pro.server.modules.vo.BreadcrumbVO;
 import com.cloud.pro.server.modules.vo.FileChunkUploadVO;
+import com.cloud.pro.server.modules.vo.FileSearchResultVO;
+import com.cloud.pro.server.modules.vo.FolderTreeNodeVO;
 import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.Api;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Objects;
@@ -185,5 +186,119 @@ public class FileController {
         FileChunkMergeContext context = fileConverter.fileChunkMergePO2Context(fileChunkMergePO);
         userFileService.mergeFile(context);
         return Result.success();
+    }
+
+    /**
+     * 文件下载
+     * @param fileId
+     * @param response
+     */
+    @GetMapping("/file/download")
+    public void download(@NotBlank(message = "文件ID不能为空") @RequestParam(value = "fileId", required = false) String fileId,
+                         HttpServletResponse response) {
+        FileDownloadContext context = new FileDownloadContext();
+        context.setFileId(IdUtil.decrypt(fileId));
+        context.setResponse(response);
+        context.setUserId(UserIdUtil.get());
+        userFileService.download(context);
+    }
+
+    /**
+     * 文件预览
+     * @param fileId
+     * @param response
+     */
+    @GetMapping("/file/preview")
+    public void preview(@NotBlank(message = "文件ID不能为空") @RequestParam(value = "fileId", required = false) String fileId,
+                         HttpServletResponse response) {
+        FilePreviewContext context = new FilePreviewContext();
+        context.setFileId(IdUtil.decrypt(fileId));
+        context.setResponse(response);
+        context.setUserId(UserIdUtil.get());
+        userFileService.preview(context);
+    }
+
+    /**
+     * 查询文件夹树
+     * @return
+     */
+    @GetMapping("/file/folder/tree")
+    public Result<List<FolderTreeNodeVO>> getFolderTree() {
+        QueryFolderTreeContext context = new QueryFolderTreeContext();
+        context.setUserId(UserIdUtil.get());
+        List<FolderTreeNodeVO> result = userFileService.getFolderTree(context);
+        return Result.data(result);
+    }
+
+    /**
+     * 文件转移
+     * @return
+     */
+    @PostMapping("/file/transfer")
+    public Result<?> transfer(@Validated @RequestBody TransferFilePO transferFilePO) {
+        String fileIds = transferFilePO.getFileIds();
+        String targetParentId = transferFilePO.getTargetParentId();
+        List<Long> fileIdList = Splitter.on(CommonConstants.COMMON_SEPARATOR).splitToList(fileIds)
+                .stream().map(IdUtil::decrypt).collect(Collectors.toList());
+
+        TransferFileContext context = new TransferFileContext();
+        context.setFileIdList(fileIdList);
+        context.setTargetParentId(IdUtil.decrypt(targetParentId));
+        context.setUserId(UserIdUtil.get());
+        userFileService.transfer(context);
+        return Result.success();
+    }
+
+    /**
+     * 文件复制
+     * @return
+     */
+    @PostMapping("/file/copy")
+    public Result<?> copy(@Validated @RequestBody CopyFilePO copyFilePO) {
+        String fileIds = copyFilePO.getFileIds();
+        String targetParentId = copyFilePO.getTargetParentId();
+        List<Long> fileIdList = Splitter.on(CommonConstants.COMMON_SEPARATOR).splitToList(fileIds)
+                .stream().map(IdUtil::decrypt).collect(Collectors.toList());
+
+        CopyFileContext context = new CopyFileContext();
+        context.setFileIdList(fileIdList);
+        context.setTargetParentId(IdUtil.decrypt(targetParentId));
+        context.setUserId(UserIdUtil.get());
+        userFileService.copy(context);
+        return Result.success();
+    }
+
+    /**
+     * 文件搜索
+     * @return
+     */
+    @GetMapping("/file/search")
+    public Result<List<FileSearchResultVO>> copy(@Validated FileSearchPO fileSearchPO) {
+        FileSearchContext context = new FileSearchContext();
+        context.setKeyword(fileSearchPO.getKeyword());
+        String fileTypes = fileSearchPO.getFileTypes();
+        if (StringUtils.isNotBlank(fileTypes) && !Objects.equals(FileConstants.ALL_FILE_TYPE, fileTypes)) {
+            List<Integer> fileTypeArray = Splitter.on(CommonConstants.COMMON_SEPARATOR).splitToList(fileTypes)
+                    .stream().map(Integer::valueOf).collect(Collectors.toList());
+            context.setFileTypeArray(fileTypeArray);
+        }
+        context.setUserId(UserIdUtil.get());
+
+        List<FileSearchResultVO> result = userFileService.search(context);
+        return Result.data(result);
+    }
+
+    /**
+     * 查询面包屑列表
+     * @return
+     */
+    @GetMapping("/file/breadcrumbs")
+    public Result<List<BreadcrumbVO>> getBreadcrumbs(@NotBlank(message = "文件ID不能为空")
+                                                     @RequestParam(value = "fileId", required = false) String fileId) {
+        QueryBreadcrumbsContext context = new QueryBreadcrumbsContext();
+        context.setFileId(IdUtil.decrypt(fileId));
+        context.setUserId(UserIdUtil.get());
+        List<BreadcrumbVO> result = userFileService.getBreadcrumbs(context);
+        return Result.data(result);
     }
 }

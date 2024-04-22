@@ -4,6 +4,7 @@ import com.cloud.pro.core.utils.FileUtil;
 import com.cloud.pro.storage.engine.core.AbstractStorageEngine;
 import com.cloud.pro.storage.engine.core.context.DeleteFileContext;
 import com.cloud.pro.storage.engine.core.context.MergeFileContext;
+import com.cloud.pro.storage.engine.core.context.ReadFileContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileChunkContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileContext;
 import com.cloud.pro.storage.engine.local.config.LocalStorageEngineConfig;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
@@ -66,5 +68,11 @@ public class LocalStorageEngine extends AbstractStorageEngine {
         FileUtil.deleteFiles(chunkPaths);
 
         context.setRealPath(realFilePath);
+    }
+
+    @Override
+    protected void doReadFile(ReadFileContext context) throws IOException {
+        File file = new File(context.getRealPath());
+        FileUtil.writeFile2OutputStream(new FileInputStream(file), context.getOutputStream(), file.length());
     }
 }

@@ -6,13 +6,17 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
+import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -34,7 +38,21 @@ public class FileUtil {
                 filename.indexOf(CommonConstants.POINT_STR) == CommonConstants.MINUS_ONE_INT) {
             return StringUtils.EMPTY;
         }
-        return filename.substring(filename.lastIndexOf(CommonConstants.POINT_STR));
+        return filename.substring(filename.lastIndexOf(CommonConstants.POINT_STR)).toLowerCase();
+    }
+
+    /**
+     * 获取文件类型
+     *
+     * @param filename
+     * @return
+     */
+    public static String getFileExtName(String filename) {
+        if (StringUtils.isBlank(filename) ||
+                filename.indexOf(CommonConstants.POINT_STR) == CommonConstants.MINUS_ONE_INT) {
+            return StringUtils.EMPTY;
+        }
+        return filename.substring(filename.lastIndexOf(CommonConstants.POINT_STR) + CommonConstants.ONE_INT).toLowerCase();
     }
 
     /**
@@ -86,8 +104,10 @@ public class FileUtil {
                 RandomAccessFile randomAccessFile = new RandomAccessFile(targetFile, "rw");
                 FileChannel outputChannel = randomAccessFile.getChannel();
                 ReadableByteChannel inputChannel = Channels.newChannel(inputStream)) {
+            // 底层会调用零拷贝技术（如果当前操作系统有提供该系统调用）
             outputChannel.transferFrom(inputChannel, 0L, totalSize);
         }
+        inputStream.close();
     }
 
     /**
@@ -175,5 +195,45 @@ public class FileUtil {
      */
     public static void appendWrite(Path target, Path source) throws IOException {
         Files.write(target, Files.readAllBytes(source), StandardOpenOption.APPEND);
+    }
+
+    /**
+     * 利用零拷贝技术读取文件内容写入到输出流中
+     * @param fileInputStream
+     * @param outputStream
+     * @param length
+     * @throws IOException
+     */
+    public static void writeFile2OutputStream(FileInputStream fileInputStream, OutputStream outputStream, long length) throws IOException {
+        try (
+                FileChannel inputChannel = fileInputStream.getChannel();
+                WritableByteChannel writableByteChannel = Channels.newChannel(outputStream)) {
+            // 底层会调用零拷贝技术（如果当前操作系统有提供该系统调用）
+            inputChannel.transferTo(0L, length, writableByteChannel);
+            outputStream.flush();
+        }
+        fileInputStream.close();
+        outputStream.close();
+    }
+
+    /**
+     * 获取文件的 content-type
+     * @param filePath
+     * @return
+     */
+    public static String getContentType(String filePath) {
+        //利用nio提供的类判断文件ContentType
+        File file = new File(filePath);
+        String contentType = null;
+        try {
+            contentType = Files.probeContentType(file.toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //若失败则调用另一个方法进行判断
+        if (StringUtils.isBlank(contentType)) {
+            contentType = new MimetypesFileTypeMap().getContentType(file);
+        }
+        return contentType;
     }
 }

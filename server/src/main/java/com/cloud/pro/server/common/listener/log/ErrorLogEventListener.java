@@ -1,7 +1,7 @@
 package com.cloud.pro.server.common.listener.log;
 
 import com.cloud.pro.core.utils.IdUtil;
-import com.cloud.pro.server.common.event.ErrorLogEvent;
+import com.cloud.pro.server.common.event.log.ErrorLogEvent;
 import com.cloud.pro.server.modules.entity.ErrorLog;
 import com.cloud.pro.server.modules.service.ErrorLogService;
 import org.springframework.context.event.EventListener;

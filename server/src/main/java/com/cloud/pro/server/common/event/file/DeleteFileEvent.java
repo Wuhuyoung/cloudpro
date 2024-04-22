@@ -1,4 +1,4 @@
-package com.cloud.pro.server.common.event;
+package com.cloud.pro.server.common.event.file;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -16,6 +16,7 @@ import java.util.List;
 @EqualsAndHashCode
 @ToString
 public class DeleteFileEvent extends ApplicationEvent {
+    private static final long serialVersionUID = 1056062250877710499L;
 
     private List<Long> fileIdList;
 

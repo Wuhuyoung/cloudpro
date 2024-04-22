@@ -51,9 +51,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.cloud.pro</groupId>-->
+<!--            <artifactId>cloud-pro-storage-engine-local</artifactId>-->
+<!--            <version>0.0.1-SNAPSHOT</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.cloud.pro</groupId>
-            <artifactId>cloud-pro-storage-engine-local</artifactId>
+            <artifactId>cloud-pro-storage-engine-fastdfs</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

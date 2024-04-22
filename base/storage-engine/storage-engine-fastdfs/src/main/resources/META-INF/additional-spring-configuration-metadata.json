@@ -1,0 +1,22 @@
+{
+  "properties": [
+    {
+      "name": "com.cloud.pro.storage.engine.fdfs.connect-timeout",
+      "type": "java.lang.Integer",
+      "description": "连接的超时时间",
+      "defaultValue": 600
+    },
+    {
+      "name": "com.cloud.pro.storage.engine.fdfs.tracker-list",
+      "type": "java.util.List",
+      "description": "跟踪服务器地址列表",
+      "defaultValue": []
+    },
+    {
+      "name": "com.cloud.pro.storage.engine.fdfs.group",
+      "type": "java.lang.String",
+      "description": "组名称",
+      "defaultValue": "group1"
+    }
+  ]
+}

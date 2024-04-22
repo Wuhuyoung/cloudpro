@@ -1,20 +1,20 @@
 package com.cloud.pro.server.modules.vo;
 
-import com.cloud.pro.web.serializer.IdEncryptSerializer;
 import com.cloud.pro.web.serializer.LocalDateTime2StringSerializer;
+import com.cloud.pro.web.serializer.IdEncryptSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 用户查询文件列表响应实体
+ * 用户搜索文件列表响应实体
  */
 @Data
-public class UserFileVO implements Serializable {
-    private static final long serialVersionUID = -668602235345525956L;
+public class FileSearchResultVO implements Serializable {
+    private static final long serialVersionUID = 5391666341987493050L;
+
     /**
      * 文件ID
      */
@@ -26,6 +26,11 @@ public class UserFileVO implements Serializable {
      */
     @JsonSerialize(using = IdEncryptSerializer.class)
     private Long parentId;
+
+    /**
+     * 父文件夹名称
+     */
+    private String parentFilename;
 
     /**
      * 文件名

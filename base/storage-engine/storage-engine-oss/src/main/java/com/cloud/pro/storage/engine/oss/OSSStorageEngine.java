@@ -3,6 +3,7 @@ package com.cloud.pro.storage.engine.oss;
 import com.cloud.pro.storage.engine.core.AbstractStorageEngine;
 import com.cloud.pro.storage.engine.core.context.DeleteFileContext;
 import com.cloud.pro.storage.engine.core.context.MergeFileContext;
+import com.cloud.pro.storage.engine.core.context.ReadFileContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileChunkContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileContext;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,11 @@ public class OSSStorageEngine extends AbstractStorageEngine {
 
     @Override
     protected void doMergeFile(MergeFileContext context) throws IOException {
+
+    }
+
+    @Override
+    protected void doReadFile(ReadFileContext context) throws IOException {
 
     }
 }
