@@ -454,6 +454,34 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
         return result;
     }
 
+    /**
+     * 递归查询所有的子文件信息
+     * @param records
+     * @param delFlagEnum
+     * @return
+     */
+    @Override
+    public List<UserFile> findAllFileRecords(List<UserFile> records, DelFlagEnum delFlagEnum) {
+        List<UserFile> allRecords = Lists.newArrayList(records);
+        List<Long> folderRecordIds = Lists.newArrayList();
+        for (UserFile record : records) {
+            if (FolderFlagEnum.YES.getCode().equals(record.getFolderFlag())) {
+                folderRecordIds.add(record.getFileId());
+            }
+        }
+        if (CollectionUtils.isEmpty(folderRecordIds)) {
+            return allRecords;
+        }
+        LambdaQueryWrapper<UserFile> lqw = new LambdaQueryWrapper<>();
+        lqw.in(UserFile::getParentId, folderRecordIds);
+        if (!Objects.isNull(delFlagEnum) && !DelFlagEnum.YES_AND_NO.equals(delFlagEnum)) {
+            lqw.eq(UserFile::getDelFlag, delFlagEnum.getCode());
+        }
+        List<UserFile> childRecords = this.list(lqw);
+        allRecords.addAll(findAllFileRecords(childRecords, DelFlagEnum.YES_AND_NO));
+        return allRecords;
+    }
+
     /**********************************private**********************************/
 
     /**

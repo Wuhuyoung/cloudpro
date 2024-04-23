@@ -16,7 +16,12 @@ public enum DelFlagEnum {
     /**
      * 已删除
      */
-    YES(1);
+    YES(1),
+
+    /**
+     * 所有文件
+     */
+    YES_AND_NO(2);
 
     private Integer code;
 }

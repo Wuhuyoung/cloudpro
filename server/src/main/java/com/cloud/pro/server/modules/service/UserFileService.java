@@ -1,5 +1,6 @@
 package com.cloud.pro.server.modules.service;
 
+import com.cloud.pro.server.enums.DelFlagEnum;
 import com.cloud.pro.server.modules.context.file.*;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.entity.UserFile;
@@ -129,4 +130,12 @@ public interface UserFileService extends IService<UserFile> {
      * @return
      */
     List<BreadcrumbVO> getBreadcrumbs(QueryBreadcrumbsContext context);
+
+    /**
+     * 递归查询所有的子文件信息
+     * @param records
+     * @param delFlagEnum
+     * @return
+     */
+    List<UserFile> findAllFileRecords(List<UserFile> records, DelFlagEnum delFlagEnum);
 }
