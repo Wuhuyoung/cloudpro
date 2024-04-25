@@ -65,8 +65,7 @@ import java.util.stream.Collectors;
 * @createDate 2024-02-26 23:00:21
 */
 @Service
-public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
-        implements UserFileService, ApplicationContextAware {
+public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> implements UserFileService, ApplicationContextAware {
 
     @Resource
     private FileService fileService;
@@ -283,6 +282,25 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
     }
 
     /**
+     * 文件下载，不校验用户是否是文件所有者
+     * @param context
+     */
+    @Override
+    public void downloadWithoutCheckUser(FileDownloadContext context) {
+        // 1.参数校验，校验文件是否存在
+        UserFile userFile = this.getById(context.getFileId());
+        if (Objects.isNull(userFile)) {
+            throw new BusinessException("当前文件记录不存在");
+        }
+        // 2.校验是否是文件夹
+        if (checkIsFolder(userFile)) {
+            throw new BusinessException("文件夹暂不支持下载");
+        }
+        // 3.下载
+        doDownload(userFile, context.getResponse());
+    }
+
+    /**
      * 文件预览
      * @param context
      */
@@ -478,8 +496,26 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
             lqw.eq(UserFile::getDelFlag, delFlagEnum.getCode());
         }
         List<UserFile> childRecords = this.list(lqw);
-        allRecords.addAll(findAllFileRecords(childRecords, DelFlagEnum.YES_AND_NO));
+        allRecords.addAll(findAllFileRecords(childRecords, delFlagEnum));
         return allRecords;
+    }
+
+    /**
+     * 递归查询所有的子文件信息
+     * @param fileIdList
+     * @param delFlagEnum
+     * @return
+     */
+    @Override
+    public List<UserFile> findAllFileRecordsByFileIdList(List<Long> fileIdList, DelFlagEnum delFlagEnum) {
+        if (CollectionUtils.isEmpty(fileIdList)) {
+            return Lists.newArrayList();
+        }
+        List<UserFile> records = this.listByIds(fileIdList);
+        if (CollectionUtils.isEmpty(records)) {
+            return Lists.newArrayList();
+        }
+        return findAllFileRecords(records, delFlagEnum);
     }
 
     /**********************************private**********************************/
@@ -784,11 +820,13 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile>
         List<Long> fileIdList = deleteFileContext.getFileIdList();
 
         // 查询文件夹下的子文件
-        DeleteFileContext childrenFileContext = getChildrenFile(deleteFileContext);
-        if (!Objects.isNull(childrenFileContext)) {
-            // 递归删除文件夹下的子文件
-            doDeleteFile(childrenFileContext);
-        }
+        // 这里不用删除文件夹下的子文件，因为监听事件需要判断本次删除影响到的文件，来更新影响到的分享状态
+        // 如果都删除了就无法判断哪些子文件是本次删除的
+//        DeleteFileContext childrenFileContext = getChildrenFile(deleteFileContext);
+//        if (!Objects.isNull(childrenFileContext)) {
+//            // 递归删除文件夹下的子文件
+//            doDeleteFile(childrenFileContext);
+//        }
 
         // 删除当前文件
         LambdaUpdateWrapper<UserFile> luw = new LambdaUpdateWrapper<>();

@@ -7,7 +7,7 @@ import com.cloud.pro.server.modules.mapper.UserSearchHistoryMapper;
 import org.springframework.stereotype.Service;
 
 /**
-* @author 86183
+* @author han
 * @description 针对表【cloud_pro_user_search_history(用户搜索历史表)】的数据库操作Service实现
 * @createDate 2024-04-21 23:01:07
 */

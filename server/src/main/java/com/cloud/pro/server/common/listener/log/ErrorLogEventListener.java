@@ -5,6 +5,7 @@ import com.cloud.pro.server.common.event.log.ErrorLogEvent;
 import com.cloud.pro.server.modules.entity.ErrorLog;
 import com.cloud.pro.server.modules.service.ErrorLogService;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -22,6 +23,7 @@ public class ErrorLogEventListener {
      * @param event
      */
     @EventListener(ErrorLogEvent.class)
+    @Async(value = "eventListenerTaskExecutor")
     public void saveErrorLog(ErrorLogEvent event) {
         ErrorLog errorLog = new ErrorLog();
         errorLog.setId(IdUtil.get());

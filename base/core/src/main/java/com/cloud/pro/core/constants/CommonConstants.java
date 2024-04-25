@@ -39,4 +39,9 @@ public interface CommonConstants {
      * 组件扫描基础路径
      */
     String BASE_COMPONENT_SCAN_PATH = "com.cloud.pro";
+
+    /**
+     * 公用加密字符串
+     */
+    String COMMON_ENCRYPT_STR = "****";
 }

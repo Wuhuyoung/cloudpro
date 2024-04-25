@@ -219,6 +219,7 @@
                 <version>3.1.2</version>
             </plugin>
         </plugins>
+        <!--spring boot 2，在进行单元测试的时候，不支持.yml文件！！！-->
     </build>
 
 </project>

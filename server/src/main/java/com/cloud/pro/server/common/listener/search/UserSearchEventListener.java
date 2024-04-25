@@ -7,6 +7,7 @@ import com.cloud.pro.server.modules.entity.UserSearchHistory;
 import com.cloud.pro.server.modules.service.UserSearchHistoryService;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -25,6 +26,7 @@ public class UserSearchEventListener {
      * @param event
      */
     @EventListener(classes = UserSearchEvent.class)
+    @Async(value = "eventListenerTaskExecutor")
     public void saveSearchHistory(UserSearchEvent event) {
         UserSearchHistory history = new UserSearchHistory();
         history.setId(IdUtil.get());

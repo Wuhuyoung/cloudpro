@@ -13,6 +13,11 @@ public class QueryFileListContext implements Serializable {
     private static final long serialVersionUID = 6235327929325074562L;
 
     /**
+     * 文件ID集合
+     */
+    private List<Long> fileIdList;
+
+    /**
      * 父文件夹ID
      */
     private Long parentId;

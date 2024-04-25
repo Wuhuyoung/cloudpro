@@ -93,6 +93,12 @@ public interface UserFileService extends IService<UserFile> {
     void download(FileDownloadContext context);
 
     /**
+     * 文件下载，不校验用户是否是文件所有者
+     * @param context
+     */
+    void downloadWithoutCheckUser(FileDownloadContext context);
+
+    /**
      * 文件预览
      * @param context
      */
@@ -138,4 +144,11 @@ public interface UserFileService extends IService<UserFile> {
      * @return
      */
     List<UserFile> findAllFileRecords(List<UserFile> records, DelFlagEnum delFlagEnum);
+
+    /**
+     * 递归查询所有的子文件信息
+     * @param fileIdList
+     * @return
+     */
+    List<UserFile> findAllFileRecordsByFileIdList(List<Long> fileIdList, DelFlagEnum delFlagEnum);
 }

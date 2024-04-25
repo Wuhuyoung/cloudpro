@@ -1,8 +1,16 @@
 {
-  "properties": [{
-    "name": "com.cloud.pro.server.chunk-file-expiration-days",
-    "type": "java.lang.Integer",
-    "description": "文件分片的过期天数",
-    "defaultValue": 1
-  }]
+  "properties": [
+    {
+      "name": "com.cloud.pro.server.chunk-file-expiration-days",
+      "type": "java.lang.Integer",
+      "description": "文件分片的过期天数",
+      "defaultValue": 1
+    },
+    {
+      "name": "com.cloud.pro.server.share-prefix",
+      "type": "java.lang.String",
+      "description": "分享链接的前缀",
+      "defaultValue": "http://127.0.0.1:serverPort/share/"
+    }
+  ]
 }

@@ -21,6 +21,7 @@ import com.cloud.pro.server.modules.po.file.QueryUploadedChunksPO;
 import com.cloud.pro.server.modules.po.file.SecUploadFilePO;
 import com.cloud.pro.server.modules.po.file.UpdateFilenamePO;
 import com.cloud.pro.server.modules.vo.BreadcrumbVO;
+import com.cloud.pro.server.modules.vo.UserFileVO;
 import com.cloud.pro.storage.engine.core.context.StoreFileChunkContext;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -71,4 +72,6 @@ public interface FileConverter {
     @Mapping(source = "fileId", target = "id")
     @Mapping(source = "filename", target = "name")
     BreadcrumbVO userFile2BreadcrumbVO(UserFile userFile);
+
+    UserFileVO userFile2UserFileVO(UserFile userFile);
 }

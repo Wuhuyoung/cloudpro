@@ -107,7 +107,7 @@ public class LoginAspect {
         }
         // 2.从缓存中获取token，进行比对
         Object redisAccessToken = redisTemplate.opsForValue().get(UserConstants.USER_LOGIN_TOKEN_PREFIX + userId);
-        // 登录过期
+        // 登录token非法或者过期
         if (Objects.isNull(redisAccessToken)) {
             return false;
         }

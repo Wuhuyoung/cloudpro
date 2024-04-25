@@ -17,6 +17,7 @@ import org.assertj.core.util.Lists;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -51,6 +52,7 @@ public class FilePhysicalDeleteEventListener implements ApplicationContextAware 
      * @param event
      */
     @EventListener(classes = FilePhysicalDeleteEvent.class)
+    @Async(value = "eventListenerTaskExecutor")
     public void physicalDeleteFile(FilePhysicalDeleteEvent event) {
         List<UserFile> records = event.getAllRecords();
         if (CollectionUtils.isEmpty(records)) {
