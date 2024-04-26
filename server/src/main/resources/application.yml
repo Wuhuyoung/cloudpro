@@ -21,10 +21,11 @@ spring:
   # Redis 配置
   redis:
     database: 0
-    host: 192.168.5.100
+#    host: 192.168.5.100
+    host: 127.0.0.1
     port: 6379
     timeout: 5000
-    password: 491001
+#    password: 491001
     lettuce: #lettuce是springboot内置的，如果用jedis还需要导入相应依赖
       pool:
         max-active: 8  #最大连接
@@ -34,7 +35,7 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名
@@ -68,3 +69,6 @@ com:
             tracker-list:
               - 124.222.209.31:22122
             group: group1
+      server:
+        # 分享链接前缀，前端地址
+        share-prefix: http://127.0.0.1:5173/

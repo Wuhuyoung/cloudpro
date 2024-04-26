@@ -9,6 +9,7 @@ import com.cloud.pro.core.response.ResponseCode;
 import com.cloud.pro.core.utils.IdUtil;
 import com.cloud.pro.core.utils.JwtUtil;
 import com.cloud.pro.core.utils.UUIDUtil;
+import com.cloud.pro.server.common.cache.ManualCacheService;
 import com.cloud.pro.server.common.config.ServerConfig;
 import com.cloud.pro.server.common.event.log.ErrorLogEvent;
 import com.cloud.pro.server.constants.FileConstants;
@@ -55,8 +56,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.io.Serializable;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -87,6 +92,9 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
     private FileConverter fileConverter;
 
     private ApplicationContext applicationContext;
+
+    @Resource(name = "shareManualCacheService")
+    private ManualCacheService<Share> cacheService;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -305,6 +313,42 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
         }
     }
 
+    @Override
+    public boolean removeById(Serializable id) {
+        return cacheService.removeById(id);
+    }
+
+    @Override
+    public boolean removeByIds(Collection<?> list) {
+        return cacheService.removeByIds((Collection<? extends Serializable>) list);
+    }
+
+    @Override
+    public boolean updateById(Share entity) {
+        return cacheService.updateById(entity.getShareId(), entity);
+    }
+
+    @Override
+    public boolean updateBatchById(Collection<Share> entityList) {
+        if (CollectionUtils.isEmpty(entityList)) {
+            return true;
+        }
+        Map<Long, Share> entityMap = entityList.stream().collect(Collectors.toMap(Share::getShareId, e -> e));
+        return cacheService.updateByIds(entityMap);
+    }
+
+    @Override
+    public Share getById(Serializable id) {
+        return cacheService.getById(id);
+//        return baseMapper.selectById(id);
+    }
+
+    @Override
+    public List<Share> listByIds(Collection<? extends Serializable> idList) {
+        return cacheService.getByIds(idList);
+//        return baseMapper.selectBatchIds(idList);
+    }
+
     /**********************************private**********************************/
 
     /**
@@ -333,10 +377,8 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
             return;
         }
         // 分享状态改变
-        LambdaUpdateWrapper<Share> luw = new LambdaUpdateWrapper<>();
-        luw.eq(Share::getShareId, shareId);
-        luw.set(Share::getShareStatus, shareStatus.getCode());
-        if (!this.update(luw)) {
+        record.setShareStatus(shareStatus.getCode());
+        if (!this.updateById(record)) {
             ErrorLogEvent event = new ErrorLogEvent(this,
                     String.format("分享状态更新失败，请手动更新状态，分享ID为：%d，分享状态改为：%d", shareId, shareStatus.getCode()),
                     CommonConstants.ZERO_LONG);
@@ -603,7 +645,8 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
         if (sharePrefix.lastIndexOf(CommonConstants.SLASH_STR) == CommonConstants.MINUS_ONE_INT) {
             sharePrefix += CommonConstants.SLASH_STR;
         }
-        return sharePrefix + shareId;
+        // 这里的shareId需要加密，但是使用IdUtil进行加密生成的字符串中有/、+这些符号，在URL中有特殊含义，需要转化成unicode表示
+        return sharePrefix + URLEncoder.encode(IdUtil.encrypt(shareId));
     }
 }
 

@@ -2,6 +2,7 @@ package com.cloud.pro.server.modules.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.pro.server.common.cache.AnnotationCacheService;
 import com.cloud.pro.server.constants.FileConstants;
 import com.cloud.pro.server.constants.UserConstants;
 import com.cloud.pro.core.exception.BusinessException;
@@ -28,6 +29,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +53,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Resource(name = "userAnnotationCacheService")
+    private AnnotationCacheService<User> cacheService;
 
     /**
      * 用户注册
@@ -214,6 +221,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userConverter.assembleUserVO(user, userFile);
     }
 
+    @Override
+    public boolean removeById(Serializable id) {
+        return cacheService.removeById(id);
+    }
+
+    @Override
+    public boolean updateById(User entity) {
+        return cacheService.updateById(entity.getUserId(), entity);
+    }
+
+    @Override
+    public User getById(Serializable id) {
+        return cacheService.getById(id);
+//        return baseMapper.selectById(id);
+    }
 
     /**********************************private**********************************/
 

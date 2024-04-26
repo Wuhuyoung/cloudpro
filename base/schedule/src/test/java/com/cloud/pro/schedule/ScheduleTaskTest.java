@@ -18,7 +18,7 @@ public class ScheduleTaskTest {
     @Test
     public void testRunScheduleTask() throws Exception {
         // 每5秒执行一次
-        String cron = "han * * * * ? ";
+        String cron = "0/5 * * * * ? ";
 
         String key = manager.startTask(task, cron);
 

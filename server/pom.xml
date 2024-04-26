@@ -47,6 +47,11 @@
             <artifactId>cloud-pro-cache-redis</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.cloud.pro</groupId>-->
+<!--            <artifactId>cloud-pro-cache-caffeine</artifactId>-->
+<!--            <version>0.0.1-SNAPSHOT</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>

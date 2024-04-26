@@ -60,6 +60,9 @@ public class FilePhysicalDeleteEventListener implements ApplicationContextAware 
         }
         // 1.查询所有无引用的实体文件记录
         List<Long> deleteRealFileIds = findAllUnusedRealFileIdList(records);
+        if (CollectionUtils.isEmpty(deleteRealFileIds)) {
+            return;
+        }
         // 2.删除文件记录
         List<File> fileList = fileService.listByIds(deleteRealFileIds);
         if (CollectionUtils.isEmpty(fileList)) {
