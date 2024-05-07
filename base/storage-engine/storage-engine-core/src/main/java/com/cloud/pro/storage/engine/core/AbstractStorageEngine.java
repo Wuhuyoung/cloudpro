@@ -27,7 +27,7 @@ public abstract class AbstractStorageEngine implements StorageEngine {
      * 共用的获取缓存的方法
      * @return
      */
-    protected RedisTemplate<String, Object> getRedisTemplate() {
+    protected RedisTemplate<String, Object> getCache() {
         return redisTemplate;
     }
 

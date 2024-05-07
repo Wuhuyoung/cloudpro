@@ -243,7 +243,8 @@ public class FileController {
 
         TransferFileContext context = new TransferFileContext();
         context.setFileIdList(fileIdList);
-        context.setTargetParentId(IdUtil.decrypt(targetParentId));
+//        context.setTargetParentId(IdUtil.decrypt(targetParentId));
+        context.setTargetParentId(Long.valueOf(targetParentId));
         context.setUserId(UserIdUtil.get());
         userFileService.transfer(context);
         return Result.success();
@@ -262,7 +263,8 @@ public class FileController {
 
         CopyFileContext context = new CopyFileContext();
         context.setFileIdList(fileIdList);
-        context.setTargetParentId(IdUtil.decrypt(targetParentId));
+//        context.setTargetParentId(IdUtil.decrypt(targetParentId));
+        context.setTargetParentId(Long.valueOf(targetParentId));
         context.setUserId(UserIdUtil.get());
         userFileService.copy(context);
         return Result.success();

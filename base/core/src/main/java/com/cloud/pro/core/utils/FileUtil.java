@@ -236,4 +236,21 @@ public class FileUtil {
         }
         return contentType;
     }
+
+    /**
+     * 普通的流对流数据传输
+     * @param inputStream
+     * @param outputStream
+     * @throws IOException
+     */
+    public static void writeStream2Stream(InputStream inputStream, OutputStream outputStream) throws IOException {
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = inputStream.read(buffer)) != CommonConstants.MINUS_ONE_INT) {
+            outputStream.write(buffer, CommonConstants.ZERO_INT, len);
+        }
+        outputStream.flush();
+        inputStream.close();
+        outputStream.close();
+    }
 }

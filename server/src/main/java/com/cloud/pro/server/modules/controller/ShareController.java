@@ -176,7 +176,8 @@ public class ShareController {
         List<Long> fileIdList = Splitter.on(CommonConstants.COMMON_SEPARATOR).splitToList(fileIds)
                 .stream().map(IdUtil::decrypt).collect(Collectors.toList());
         context.setFileIdList(fileIdList);
-        context.setTargetParentId(IdUtil.decrypt(shareSavePO.getTargetParentId()));
+//        context.setTargetParentId(IdUtil.decrypt(shareSavePO.getTargetParentId()));
+        context.setTargetParentId(Long.valueOf(shareSavePO.getTargetParentId()));
         context.setUserId(UserIdUtil.get());
         context.setShareId(ShareIdUtil.get());
 

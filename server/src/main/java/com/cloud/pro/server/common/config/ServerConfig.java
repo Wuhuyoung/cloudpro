@@ -29,6 +29,7 @@ public class ServerConfig {
     @PostConstruct
     public void initSharePrefix() {
         // 由于@Value是在bean初始化之后解析，所以需要等bean初始化后才能获取到serverPort
-        sharePrefix = "http://127.0.0.1:" + serverPort + "/share/";
+//        sharePrefix = "http://127.0.0.1:" + serverPort + "/share/";
+        sharePrefix = "http://127.0.0.1:5173/share/";
     }
 }

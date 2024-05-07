@@ -44,4 +44,10 @@ public interface CommonConstants {
      * 公用加密字符串
      */
     String COMMON_ENCRYPT_STR = "****";
+
+    String QUESTION_MARK_STR = "?";
+    String EQUALS_MARK_STR = "=";
+    String AND_MARK_STR = "&";
+    String LEFT_BRACKET_STR = "[";
+    String RIGHT_BRACKET_STR = "]";
 }

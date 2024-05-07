@@ -207,6 +207,9 @@ public class IdUtil {
      * @return
      */
     public static Long decrypt(String decryptId) {
+        if (StringUtils.equals(decryptId, "-1")) {
+            return -1L;
+        }
         if (StringUtils.isNotBlank(decryptId)) {
             byte[] encrypt = Base64.decode(decryptId);
             byte[] content = AES128Util.aesDecode(encrypt);
