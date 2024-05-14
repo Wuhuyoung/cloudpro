@@ -24,4 +24,11 @@
         share_url,share_code,share_status,
         create_user,create_time
     </sql>
+    <select id="rollingQueryShareId" resultType="java.lang.Long">
+        select share_id
+        from cloud_pro_share
+        where share_id > #{startId}
+        order by share_id asc
+        limit #{batchSize}
+    </select>
 </mapper>

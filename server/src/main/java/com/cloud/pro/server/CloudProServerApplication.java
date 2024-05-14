@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @ServletComponentScan(basePackages = CommonConstants.BASE_COMPONENT_SCAN_PATH)
 @ComponentScan(basePackages = CommonConstants.BASE_COMPONENT_SCAN_PATH)
 @EnableTransactionManagement
-@MapperScan(basePackages = CommonConstants.BASE_COMPONENT_SCAN_PATH + ".server.modules.**.mapper")
+@MapperScan(basePackages = CommonConstants.BASE_COMPONENT_SCAN_PATH + ".server.modules.mapper")
 @EnableAsync
 public class CloudProServerApplication {
     public static void main(String[] args) {

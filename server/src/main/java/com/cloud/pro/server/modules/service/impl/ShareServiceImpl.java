@@ -3,6 +3,8 @@ package com.cloud.pro.server.modules.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.pro.bloom.filter.core.BloomFilter;
+import com.cloud.pro.bloom.filter.core.BloomFilterManager;
 import com.cloud.pro.core.constants.CommonConstants;
 import com.cloud.pro.core.exception.BusinessException;
 import com.cloud.pro.core.response.ResponseCode;
@@ -47,6 +49,7 @@ import com.cloud.pro.server.modules.vo.ShareUrlListVO;
 import com.cloud.pro.server.modules.vo.ShareUrlVO;
 import com.cloud.pro.server.modules.vo.ShareUserInfoVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.util.Lists;
@@ -71,6 +74,7 @@ import java.util.stream.Collectors;
 * @createDate 2024-04-23 22:23:32
 */
 @Service
+@Slf4j
 public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements ShareService, ApplicationContextAware {
 
     @Resource
@@ -95,6 +99,11 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
 
     @Resource(name = "shareManualCacheService")
     private ManualCacheService<Share> cacheService;
+
+    @Resource
+    private BloomFilterManager manager;
+
+    private static final String BLOOM_FILTER_NAME = "SHARE_SIMPLE_DETAIL";
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -121,6 +130,8 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
         vo.setShareUrl(record.getShareUrl());
         vo.setShareCode(record.getShareCode());
         vo.setShareStatus(record.getShareStatus());
+        // 4.后置操作，将创建的shareId插入布隆过滤器中
+        afterCreate(context);
         return vo;
     }
 
@@ -313,6 +324,17 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
         }
     }
 
+    /**
+     * 滚动查询已存在的分享ID
+     * @param startId
+     * @param batchSize
+     * @return
+     */
+    @Override
+    public List<Long> rollingQueryShareId(long startId, long batchSize) {
+        return baseMapper.rollingQueryShareId(startId, batchSize);
+    }
+
     @Override
     public boolean removeById(Serializable id) {
         return cacheService.removeById(id);
@@ -350,6 +372,19 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
     }
 
     /**********************************private**********************************/
+
+    /**
+     * 创建分享链接后置操作
+     * @param context
+     */
+    private void afterCreate(CreateShareUrlContext context) {
+        // 将创建的shareId插入布隆过滤器中
+        BloomFilter bloomFilter = manager.getFilter(BLOOM_FILTER_NAME);
+        if (Objects.nonNull(bloomFilter)) {
+            bloomFilter.put(context.getRecord().getShareId());
+            log.info("create share, share id is {}, add share id to bloom filter", context.getRecord().getShareId());
+        }
+    }
 
     /**
      * 刷新一个分享的分享状态

@@ -2,6 +2,9 @@ package com.cloud.pro.server.modules.mapper;
 
 import com.cloud.pro.server.modules.entity.Share;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
 * @author han
@@ -11,6 +14,13 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 */
 public interface ShareMapper extends BaseMapper<Share> {
 
+    /**
+     * 滚动查询已存在的分享ID集合
+     * @param startId
+     * @param batchSize
+     * @return
+     */
+    List<Long> rollingQueryShareId(@Param("startId") long startId, @Param("batchSize")  long batchSize);
 }
 
 

@@ -91,4 +91,12 @@ public interface ShareService extends IService<Share> {
      * @param fileIdList
      */
     void refreshShareStatus(List<Long> fileIdList);
+
+    /**
+     * 滚动查询已存在的分享ID
+     * @param startId
+     * @param batchSize
+     * @return
+     */
+    List<Long> rollingQueryShareId(long startId, long batchSize);
 }

@@ -284,7 +284,7 @@ public class ShareTest {
         context.setShareType(ShareTypeEnum.NEED_SHARE_CODE.getCode());
         context.setShareDayType(ShareDayTypeEnum.PERMANENT_VALIDITY.getCode());
         context.setShareFileIdList(Lists.newArrayList(1783498376470192128L));
-        context.setUserId(1783497259895525378L);
+        context.setUserId(1783834547116650497L);
         // 插入500万条分享数据
         for (int i = 0; i < 5000000; i++) {
             context.setShareName("测试分享" + i);

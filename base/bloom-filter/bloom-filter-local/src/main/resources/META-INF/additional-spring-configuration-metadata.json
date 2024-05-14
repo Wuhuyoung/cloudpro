@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "com.cloud.pro.bloom.filter.local.items",
+      "type": "java.util.List",
+      "description": "需要用到的布隆过滤器集合",
+      "defaultValue": null
+    }
+  ]
+}
