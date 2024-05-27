@@ -31,6 +31,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.util.Lists;
+import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 /**
@@ -50,6 +52,7 @@ public class OSSStorageEngine extends AbstractStorageEngine {
     private static final Integer TEN_THOUSAND_INT = 10000;
 
     private static final String CACHE_KEY_TEMPLATE = "oss:cache:upload:id:%s:%s";
+    private static final String LOCK_KEY_TEMPLATE = "oss:lock:upload:%s:%s";
 
     private static final String IDENTIFIER_KEY = "identifier";
     private static final String UPLOAD_ID_KEY = "uploadId";
@@ -64,6 +67,9 @@ public class OSSStorageEngine extends AbstractStorageEngine {
 
     @Resource
     private OSSClient client;
+
+    @Resource
+    private LockRegistry lockRegistry;
 
     @Override
     protected void doStore(StoreFileContext context) throws IOException {
@@ -92,10 +98,19 @@ public class OSSStorageEngine extends AbstractStorageEngine {
         // 3.通过缓存key获取初始化后的实例对象，获取全局的uploadId和objectName
         ChunkUploadEntity entity;
         // 4.如果获取为空，直接初始化
-        synchronized (context.getUserId() + context.getIdentifier()) {
-            entity = (ChunkUploadEntity) getCache().opsForValue().get(cacheKey);
-            if (Objects.isNull(entity)) {
-                entity = initChunkUpload(context.getFilename(), cacheKey);
+        // 这里优化一下，可以使用double check+分布式锁来保证只有一个线程去执行init操作
+        entity = (ChunkUploadEntity) getCache().opsForValue().get(cacheKey);
+        if (Objects.isNull(entity)) {
+            // 锁的粒度：同一个用户上传同一份文件，只能执行一次初始化操作
+            Lock lock = lockRegistry.obtain(String.format(LOCK_KEY_TEMPLATE, context.getUserId(), context.getIdentifier()));
+            try {
+                lock.lock();
+                entity = (ChunkUploadEntity) getCache().opsForValue().get(cacheKey);
+                if (Objects.isNull(entity)) {
+                    entity = initChunkUpload(context.getFilename(), cacheKey);
+                }
+            } finally {
+                lock.unlock();
             }
         }
         // 5.分片上传

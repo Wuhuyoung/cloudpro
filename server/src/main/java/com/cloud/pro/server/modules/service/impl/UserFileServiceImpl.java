@@ -173,6 +173,8 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
             return false;
         }
         // 3.如果查到，直接挂载关联关系，返回秒传成功
+        // todo 这里用户再次上传相同文件时，需要保证并发情况下的文件命名正确
+        //  所以这里需要加一个分布式锁，锁的粒度是用户id+文件唯一标识
         saveUserFile(context.getParentId(),
                 context.getFilename(),
                 FolderFlagEnum.NO,

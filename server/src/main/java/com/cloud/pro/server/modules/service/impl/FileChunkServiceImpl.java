@@ -14,11 +14,16 @@ import com.cloud.pro.server.modules.mapper.FileChunkMapper;
 import com.cloud.pro.server.modules.service.FileChunkService;
 import com.cloud.pro.storage.engine.core.StorageEngine;
 import com.cloud.pro.storage.engine.core.context.StoreFileChunkContext;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 /**
 * @author han
@@ -38,12 +43,21 @@ public class FileChunkServiceImpl extends ServiceImpl<FileChunkMapper, FileChunk
     @Resource
     private FileConverter fileConverter;
 
+    @Resource
+    private LockRegistry lockRegistry;
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
+
+    private static final String CHUNK_SAVE_LOCK_KEY_TEMPLATE = "file:lock:chunk:save:%s:%s";
+
+    private static final String CHUNK_MERGE_CACHE_KEY_TEMPLATE = "file:cache:chunk:merge:%s:%s";
+
     /**
      * 文件分片保存
      * @param context
      */
     @Override
-    // TODO 线程安全优化：1.使用userId为锁的唯一标识，只有校验部分需要加锁，减小锁的粒度 2.分布式锁，解决单机问题
     public synchronized void saveChunkFile(FileChunkSaveContext context) {
         // 1.上传实体记录
         doStoreFileChunk(context);
@@ -92,12 +106,33 @@ public class FileChunkServiceImpl extends ServiceImpl<FileChunkMapper, FileChunk
      * @param context
      */
     private void doJudgeMergeFile(FileChunkSaveContext context) {
-        LambdaQueryWrapper<FileChunk> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(FileChunk::getIdentifier, context.getIdentifier());
-        lqw.eq(FileChunk::getCreateUser, context.getUserId());
-        long count = this.count(lqw);
-        if (count == context.getChunkNumber()) {
-            context.setMergeFlagEnum(MergeFlagEnum.READY);
+        // 分布式锁，保证只有一个线程去查询
+        // 先从缓存中查询是否已经有其他线程返回了上传完成
+        String mergeSuccess = redisTemplate.opsForValue().get(String.format(CHUNK_MERGE_CACHE_KEY_TEMPLATE, context.getUserId(), context.getIdentifier()));
+        if (StringUtils.isNotBlank(mergeSuccess)) {
+            return;
+        }
+        Lock lock = lockRegistry.obtain(String.format(CHUNK_SAVE_LOCK_KEY_TEMPLATE, context.getUserId(), context.getIdentifier()));
+        try {
+            lock.lock();
+            mergeSuccess = redisTemplate.opsForValue().get(String.format(CHUNK_MERGE_CACHE_KEY_TEMPLATE, context.getUserId(), context.getIdentifier()));
+            if (StringUtils.isNotBlank(mergeSuccess)) {
+                return;
+            }
+            LambdaQueryWrapper<FileChunk> lqw = new LambdaQueryWrapper<>();
+            lqw.eq(FileChunk::getIdentifier, context.getIdentifier());
+            lqw.eq(FileChunk::getCreateUser, context.getUserId());
+            long count = this.count(lqw);
+            if (count == context.getChunkNumber()) {
+                context.setMergeFlagEnum(MergeFlagEnum.READY);
+                // 保存到缓存中，防止后续其他线程再次返回
+                redisTemplate.opsForValue().set(String.format(CHUNK_MERGE_CACHE_KEY_TEMPLATE, context.getUserId(), context.getIdentifier()),
+                        String.valueOf(count),
+                        30,
+                        TimeUnit.SECONDS);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 }

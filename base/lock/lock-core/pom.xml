@@ -3,13 +3,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>cloud-pro-storage-engine</artifactId>
+        <artifactId>cloud-pro-lock</artifactId>
         <groupId>com.cloud.pro</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>cloud-pro-storage-engine-oss</artifactId>
+    <artifactId>cloud-pro-lock-core</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -20,22 +20,12 @@
     <dependencies>
         <dependency>
             <groupId>com.cloud.pro</groupId>
-            <artifactId>cloud-pro-storage-engine-core</artifactId>
+            <artifactId>cloud-pro-core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.aliyun.oss</groupId>
-            <artifactId>aliyun-sdk-oss</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.cloud.pro</groupId>
-            <artifactId>cloud-pro-lock-core</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <artifactId>spring-boot-starter-integration</artifactId>
         </dependency>
     </dependencies>
-
 </project>
