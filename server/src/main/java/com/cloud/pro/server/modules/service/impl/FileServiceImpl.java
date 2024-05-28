@@ -6,23 +6,23 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.pro.core.exception.BusinessException;
 import com.cloud.pro.core.utils.FileUtil;
 import com.cloud.pro.core.utils.IdUtil;
-import com.cloud.pro.server.common.event.log.ErrorLogEvent;
+import com.cloud.pro.server.common.stream.channel.CloudProChannels;
+import com.cloud.pro.server.common.stream.event.log.ErrorLogEvent;
 import com.cloud.pro.server.modules.context.file.FileChunkMergeContext;
 import com.cloud.pro.server.modules.context.file.FileSaveContext;
 import com.cloud.pro.server.modules.context.file.QueryRealFileListContext;
 import com.cloud.pro.server.modules.entity.File;
 import com.cloud.pro.server.modules.entity.FileChunk;
+import com.cloud.pro.server.modules.mapper.FileMapper;
 import com.cloud.pro.server.modules.service.FileChunkService;
 import com.cloud.pro.server.modules.service.FileService;
-import com.cloud.pro.server.modules.mapper.FileMapper;
 import com.cloud.pro.storage.engine.core.StorageEngine;
 import com.cloud.pro.storage.engine.core.context.DeleteFileContext;
 import com.cloud.pro.storage.engine.core.context.MergeFileContext;
 import com.cloud.pro.storage.engine.core.context.StoreFileContext;
+import com.cloud.pro.stream.core.IStreamProducer;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.util.Lists;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 */
 @Service
 public class FileServiceImpl extends ServiceImpl<FileMapper, File>
-    implements FileService, ApplicationContextAware {
+    implements FileService {
 
     @Resource
     private StorageEngine storageEngine;
@@ -48,12 +48,8 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File>
     @Resource
     private FileChunkService fileChunkService;
 
-    private ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
+    @Resource(name = "defaultStreamProducer")
+    private IStreamProducer producer;
 
     /**
      * 根据条件查询用户的实际文件列表
@@ -188,9 +184,8 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File>
             } catch (IOException e) {
                 e.printStackTrace();
                 // 发送错误日志事件
-                ErrorLogEvent errorLogEvent = new ErrorLogEvent(this,
-                        "文件物理删除失败，请手动执行删除，文件路径：" + realPath, userId);
-                applicationContext.publishEvent(errorLogEvent);
+                ErrorLogEvent errorLogEvent = new ErrorLogEvent("文件物理删除失败，请手动执行删除，文件路径：" + realPath, userId);
+                producer.sendMessage(CloudProChannels.ERROR_LOG_OUTPUT, errorLogEvent);
             }
         }
         return record;

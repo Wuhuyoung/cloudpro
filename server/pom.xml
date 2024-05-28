@@ -33,10 +33,10 @@
             <artifactId>cloud-pro-swagger2</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-devtools</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.cloud.pro</groupId>
             <artifactId>cloud-pro-schedule</artifactId>
@@ -56,29 +56,42 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.cloud.pro</groupId>
-            <artifactId>cloud-pro-storage-engine-local</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.cloud.pro</groupId>-->
+<!--            <artifactId>cloud-pro-storage-engine-local</artifactId>-->
+<!--            <version>0.0.1-SNAPSHOT</version>-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>com.cloud.pro</groupId>-->
 <!--            <artifactId>cloud-pro-storage-engine-fastdfs</artifactId>-->
 <!--            <version>0.0.1-SNAPSHOT</version>-->
 <!--        </dependency>-->
         <dependency>
+            <groupId>com.cloud.pro</groupId>
+            <artifactId>cloud-pro-storage-engine-oss</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+<!--        自定义布隆过滤器-->
         <dependency>
             <groupId>com.cloud.pro</groupId>
             <artifactId>cloud-pro-bloom-filter-local</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
+<!--        分布式锁-->
         <dependency>
             <groupId>com.cloud.pro</groupId>
             <artifactId>cloud-pro-lock-redis</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+<!--        RocketMQ-->
+        <dependency>
+            <groupId>com.cloud.pro</groupId>
+            <artifactId>cloud-pro-stream-rocketmq</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>

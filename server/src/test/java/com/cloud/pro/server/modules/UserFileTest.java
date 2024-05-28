@@ -542,10 +542,15 @@ public class UserFileTest {
     }
 
     private MultipartFile generateMultipartFile() {
+        // 测试分片上传，阿里云OSS要求每个分片最小100KB
+//        StringBuffer str = new StringBuffer();
+//        for (int i = 0; i < 1024 * 100; i++) {
+//            str.append("a");
+//        }
         MockMultipartFile file = new MockMultipartFile("filename",
                 "test.txt",
                 "multipart/form-data",
-                "test upload ".getBytes(StandardCharsets.UTF_8));
+                "test upload context".getBytes(StandardCharsets.UTF_8));
         return file;
     }
 

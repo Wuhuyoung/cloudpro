@@ -3,28 +3,25 @@ package com.cloud.pro.server.modules.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.pro.core.constants.CommonConstants;
 import com.cloud.pro.core.exception.BusinessException;
-import com.cloud.pro.server.common.event.file.FilePhysicalDeleteEvent;
-import com.cloud.pro.server.common.event.file.FileRestoreEvent;
+import com.cloud.pro.server.common.stream.channel.CloudProChannels;
+import com.cloud.pro.server.common.stream.event.file.FilePhysicalDeleteEvent;
+import com.cloud.pro.server.common.stream.event.file.FileRestoreEvent;
 import com.cloud.pro.server.enums.DelFlagEnum;
 import com.cloud.pro.server.modules.context.file.QueryFileListContext;
 import com.cloud.pro.server.modules.context.recycle.DeleteContext;
 import com.cloud.pro.server.modules.context.recycle.QueryRecycleFileListContext;
 import com.cloud.pro.server.modules.context.recycle.RestoreContext;
-import com.cloud.pro.server.modules.entity.File;
 import com.cloud.pro.server.modules.entity.UserFile;
 import com.cloud.pro.server.modules.service.FileService;
 import com.cloud.pro.server.modules.service.RecycleService;
 import com.cloud.pro.server.modules.service.UserFileService;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import com.cloud.pro.storage.engine.core.StorageEngine;
-import com.cloud.pro.storage.engine.core.context.DeleteFileContext;
+import com.cloud.pro.stream.core.IStreamProducer;
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,7 +30,7 @@ import java.util.stream.Collectors;
  * 回收站模块业务处理类
  */
 @Service
-public class RecycleServiceImpl implements RecycleService, ApplicationContextAware {
+public class RecycleServiceImpl implements RecycleService {
 
     @Resource
     private UserFileService userFileService;
@@ -44,12 +41,8 @@ public class RecycleServiceImpl implements RecycleService, ApplicationContextAwa
     @Resource
     private StorageEngine storageEngine;
 
-    private ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
+    @Resource(name = "defaultStreamProducer")
+    private IStreamProducer producer;
 
     /**
      * 查询回收站文件列表
@@ -94,8 +87,8 @@ public class RecycleServiceImpl implements RecycleService, ApplicationContextAwa
             throw new BusinessException("文件还原失败");
         }
         // 4.文件还原的后置操作
-        FileRestoreEvent event = new FileRestoreEvent(this, fileIdList);
-        applicationContext.publishEvent(event);
+        FileRestoreEvent event = new FileRestoreEvent(fileIdList);
+        producer.sendMessage(CloudProChannels.FILE_RESTORE_OUTPUT, event);
     }
 
     /**
@@ -123,8 +116,8 @@ public class RecycleServiceImpl implements RecycleService, ApplicationContextAwa
 
     private void afterDelete(DeleteContext context) {
         // 1.发送一个文件彻底删除的事件
-        FilePhysicalDeleteEvent event = new FilePhysicalDeleteEvent(this, context.getAllRecords());
-        applicationContext.publishEvent(event);
+        FilePhysicalDeleteEvent event = new FilePhysicalDeleteEvent(context.getAllRecords());
+        producer.sendMessage(CloudProChannels.PHYSICAL_DELETE_FILE_OUTPUT, event);
     }
 
     private void doDelete(DeleteContext context) {

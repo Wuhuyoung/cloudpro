@@ -154,7 +154,7 @@ public class OSSStorageEngine extends AbstractStorageEngine {
 //        }
         // 2.从context中获取所有分片的URL，解析出文件合并请求的参数
         List<String> chunkPaths = context.getRealPathList();
-        if (!Collections.isEmpty(chunkPaths)) {
+        if (Collections.isEmpty(chunkPaths)) {
             throw new FrameworkException("文件分片合并请求失败，没有上传分片，文件的唯一标识为:" + context.getIdentifier());
         }
         List<PartETag> partETags = chunkPaths.stream()
@@ -238,7 +238,7 @@ public class OSSStorageEngine extends AbstractStorageEngine {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    private static class ChunkUploadEntity implements Serializable {
+    public static class ChunkUploadEntity implements Serializable {
         private static final long serialVersionUID = 1818076767741243248L;
 
         /**

@@ -22,7 +22,7 @@ spring:
   redis:
     database: 0
     host: 192.168.5.100
-#    host: 127.0.0.1
+    #    host: 127.0.0.1
     port: 6379
     timeout: 5000
     password: 491001
@@ -32,6 +32,43 @@ spring:
         max-idle: 8   #最大空闲连接
         min-idle: 0   #最小空闲连接
         max-wait: 1000ms #连接等待时间
+  # rocketMQ配置
+  cloud:
+    stream:
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+      bindings:
+        testInput:
+          destination: testTopic # 消费topic
+          group: testGroup1 # 消费组
+        testOutput:
+          destination: testTopic
+        errorLogInput:
+          destination: errorLogTopic
+          group: errorLogGroup
+        deleteFileInput:
+            destination: deleteFileTopic
+            group: deleteFileGroup
+        fileRestoreInput:
+            destination: fileRestoreTopic
+            group: fileRestoreGroup
+        physicalDeleteFileInput:
+            destination: physicalDeleteFileTopic
+            group: physicalDeleteFileGroup
+        userSearchInput:
+            destination: userSearchTopic
+            group: userSearchGroup
+        errorLogOutput:
+            destination: errorLogTopic
+        deleteFileOutput:
+            destination: deleteFileTopic
+        fileRestoreOutput:
+            destination: fileRestoreTopic
+        physicalDeleteFileOutput:
+            destination: physicalDeleteFileTopic
+        userSearchOutput:
+            destination: userSearchTopic
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -64,11 +101,17 @@ com:
     pro:
       storage:
         engine:
-          fdfs:
-            connect-timeout: 1000
-            tracker-list:
-              - 124.222.209.31:22122
-            group: group1
+#          fdfs:
+#            connect-timeout: 1000
+#            tracker-list:
+#              - localhost:22122
+#            group: group1
+          oss:
+            endpoint: oss-cn-shanghai.aliyuncs.com
+            access-key-id:
+            access-key-secret:
+            bucket-name: cloud-pro-test
+            auto-create-bucket: true
       server:
         # 分享链接前缀，前端地址
         share-prefix: http://127.0.0.1:5173/

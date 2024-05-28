@@ -4,15 +4,15 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.pro.core.constants.CommonConstants;
 import com.cloud.pro.schedule.ScheduleTask;
-import com.cloud.pro.server.common.event.log.ErrorLogEvent;
+import com.cloud.pro.server.common.stream.channel.CloudProChannels;
+import com.cloud.pro.server.common.stream.event.log.ErrorLogEvent;
 import com.cloud.pro.server.modules.entity.FileChunk;
 import com.cloud.pro.server.modules.service.FileChunkService;
 import com.cloud.pro.storage.engine.core.StorageEngine;
 import com.cloud.pro.storage.engine.core.context.DeleteFileContext;
+import com.cloud.pro.stream.core.IStreamProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
-public class CleanExpireChunkFileTask implements ScheduleTask, ApplicationContextAware {
+public class CleanExpireChunkFileTask implements ScheduleTask {
 
     @Resource
     private FileChunkService fileChunkService;
@@ -37,12 +37,8 @@ public class CleanExpireChunkFileTask implements ScheduleTask, ApplicationContex
 
     private static final Long BATCH_SIZE = 500L;
 
-    private ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
+    @Resource(name = "defaultStreamProducer")
+    private IStreamProducer producer;
 
     @Override
     public String getName() {
@@ -105,10 +101,9 @@ public class CleanExpireChunkFileTask implements ScheduleTask, ApplicationContex
         try {
             storageEngine.delete(context);
         } catch (IOException e) {
-            ErrorLogEvent event = new ErrorLogEvent(this,
-                    "分片物理文件删除失败，请手动执行删除！文件路径为：" + JSON.toJSONString(realPathList),
+            ErrorLogEvent event = new ErrorLogEvent("分片物理文件删除失败，请手动执行删除！文件路径为：" + JSON.toJSONString(realPathList),
                     CommonConstants.ZERO_LONG);
-            applicationContext.publishEvent(event);
+            producer.sendMessage(CloudProChannels.ERROR_LOG_OUTPUT, event);
         }
     }
 

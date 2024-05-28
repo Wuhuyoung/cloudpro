@@ -116,14 +116,14 @@ public class FileChunkServiceImpl extends ServiceImpl<FileChunkMapper, FileChunk
         try {
             lock.lock();
             mergeSuccess = redisTemplate.opsForValue().get(String.format(CHUNK_MERGE_CACHE_KEY_TEMPLATE, context.getUserId(), context.getIdentifier()));
-            if (StringUtils.isNotBlank(mergeSuccess)) {
+            if (StringUtils.isNotBlank(mergeSuccess) && mergeSuccess.equals(String.valueOf(context.getTotalChunks()))) {
                 return;
             }
             LambdaQueryWrapper<FileChunk> lqw = new LambdaQueryWrapper<>();
             lqw.eq(FileChunk::getIdentifier, context.getIdentifier());
             lqw.eq(FileChunk::getCreateUser, context.getUserId());
             long count = this.count(lqw);
-            if (count == context.getChunkNumber()) {
+            if (count == context.getTotalChunks()) {
                 context.setMergeFlagEnum(MergeFlagEnum.READY);
                 // 保存到缓存中，防止后续其他线程再次返回
                 redisTemplate.opsForValue().set(String.format(CHUNK_MERGE_CACHE_KEY_TEMPLATE, context.getUserId(), context.getIdentifier()),

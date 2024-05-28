@@ -7,8 +7,9 @@ import com.cloud.pro.core.constants.CommonConstants;
 import com.cloud.pro.core.exception.BusinessException;
 import com.cloud.pro.core.utils.FileUtil;
 import com.cloud.pro.core.utils.IdUtil;
-import com.cloud.pro.server.common.event.file.DeleteFileEvent;
-import com.cloud.pro.server.common.event.search.UserSearchEvent;
+import com.cloud.pro.server.common.stream.channel.CloudProChannels;
+import com.cloud.pro.server.common.stream.event.file.DeleteFileEvent;
+import com.cloud.pro.server.common.stream.event.search.UserSearchEvent;
 import com.cloud.pro.server.constants.FileConstants;
 import com.cloud.pro.server.enums.DelFlagEnum;
 import com.cloud.pro.server.enums.FileTypeEnum;
@@ -16,7 +17,6 @@ import com.cloud.pro.server.enums.FolderFlagEnum;
 import com.cloud.pro.server.modules.context.file.*;
 import com.cloud.pro.server.modules.context.user.CreateFolderContext;
 import com.cloud.pro.server.modules.converter.FileConverter;
-import com.cloud.pro.server.modules.converter.UserConverter;
 import com.cloud.pro.server.modules.entity.File;
 import com.cloud.pro.server.modules.entity.FileChunk;
 import com.cloud.pro.server.modules.entity.UserFile;
@@ -32,11 +32,9 @@ import com.cloud.pro.server.modules.vo.UploadedChunksVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
 import com.cloud.pro.storage.engine.core.StorageEngine;
 import com.cloud.pro.storage.engine.core.context.ReadFileContext;
+import com.cloud.pro.stream.core.IStreamProducer;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +63,7 @@ import java.util.stream.Collectors;
 * @createDate 2024-02-26 23:00:21
 */
 @Service
-public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> implements UserFileService, ApplicationContextAware {
+public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> implements UserFileService {
 
     @Resource
     private FileService fileService;
@@ -82,12 +80,8 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
     @Resource
     private StorageEngine storageEngine;
 
-    private static ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        UserFileServiceImpl.applicationContext = applicationContext;
-    }
+    @Resource(name = "defaultStreamProducer")
+    private IStreamProducer producer;
 
     /**
      * 创建文件夹信息
@@ -444,8 +438,8 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
         }
         // 3.执行后置动作
         // 3.1 发布文件搜索的事件（监听者更新用户的文件搜索历史）
-        UserSearchEvent event = new UserSearchEvent(this, context.getKeyword(), context.getUserId());
-        applicationContext.publishEvent(event);
+        UserSearchEvent event = new UserSearchEvent(context.getKeyword(), context.getUserId());
+        producer.sendMessage(CloudProChannels.USER_SEARCH_OUTPUT, event);
         return result;
     }
 
@@ -838,8 +832,8 @@ public class UserFileServiceImpl extends ServiceImpl<UserFileMapper, UserFile> i
             throw new BusinessException("文件删除失败");
         }
         // 发布删除文件的事件
-        DeleteFileEvent deleteFileEvent = new DeleteFileEvent(this, fileIdList);
-        applicationContext.publishEvent(deleteFileEvent);
+        DeleteFileEvent deleteFileEvent = new DeleteFileEvent(fileIdList);
+        producer.sendMessage(CloudProChannels.DELETE_FILE_OUTPUT, deleteFileEvent);
     }
 
     /**

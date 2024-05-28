@@ -13,7 +13,8 @@ import com.cloud.pro.core.utils.JwtUtil;
 import com.cloud.pro.core.utils.UUIDUtil;
 import com.cloud.pro.server.common.cache.ManualCacheService;
 import com.cloud.pro.server.common.config.ServerConfig;
-import com.cloud.pro.server.common.event.log.ErrorLogEvent;
+import com.cloud.pro.server.common.stream.channel.CloudProChannels;
+import com.cloud.pro.server.common.stream.event.log.ErrorLogEvent;
 import com.cloud.pro.server.constants.FileConstants;
 import com.cloud.pro.server.constants.ShareConstants;
 import com.cloud.pro.server.enums.DelFlagEnum;
@@ -49,12 +50,11 @@ import com.cloud.pro.server.modules.vo.ShareUrlListVO;
 import com.cloud.pro.server.modules.vo.ShareUrlVO;
 import com.cloud.pro.server.modules.vo.ShareUserInfoVO;
 import com.cloud.pro.server.modules.vo.UserFileVO;
+import com.cloud.pro.stream.core.IStreamProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.util.Lists;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,7 +75,7 @@ import java.util.stream.Collectors;
 */
 @Service
 @Slf4j
-public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements ShareService, ApplicationContextAware {
+public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements ShareService {
 
     @Resource
     private ServerConfig config;
@@ -95,8 +95,6 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
     @Resource
     private FileConverter fileConverter;
 
-    private ApplicationContext applicationContext;
-
     @Resource(name = "shareManualCacheService")
     private ManualCacheService<Share> cacheService;
 
@@ -105,10 +103,8 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
 
     private static final String BLOOM_FILTER_NAME = "SHARE_SIMPLE_DETAIL";
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
+    @Resource(name = "defaultStreamProducer")
+    private IStreamProducer producer;
 
     /**
      * 创建分享链接
@@ -414,10 +410,9 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
         // 分享状态改变
         record.setShareStatus(shareStatus.getCode());
         if (!this.updateById(record)) {
-            ErrorLogEvent event = new ErrorLogEvent(this,
-                    String.format("分享状态更新失败，请手动更新状态，分享ID为：%d，分享状态改为：%d", shareId, shareStatus.getCode()),
+            ErrorLogEvent event = new ErrorLogEvent(String.format("分享状态更新失败，请手动更新状态，分享ID为：%d，分享状态改为：%d", shareId, shareStatus.getCode()),
                     CommonConstants.ZERO_LONG);
-            applicationContext.publishEvent(event);
+            producer.sendMessage(CloudProChannels.ERROR_LOG_OUTPUT, event);
         }
     }
 
