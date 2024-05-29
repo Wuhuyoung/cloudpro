@@ -16,4 +16,11 @@
         id,user_id,search_content,
         create_time,update_time
     </sql>
+    <select id="selectUserSearchHistories" resultType="com.cloud.pro.server.modules.vo.UserSearchHistoryVO">
+        select search_content as `value`
+        from cloud_pro_user_search_history
+        where user_id = #{context.userId}
+        order by update_time desc
+        limit 10
+    </select>
 </mapper>

@@ -7,6 +7,7 @@ import com.cloud.pro.core.utils.IdUtil;
 import com.cloud.pro.server.modules.context.user.ChangePasswordContext;
 import com.cloud.pro.server.modules.context.user.CheckAnswerContext;
 import com.cloud.pro.server.modules.context.user.CheckUsernameContext;
+import com.cloud.pro.server.modules.context.user.QueryUserSearchHistoryContext;
 import com.cloud.pro.server.modules.context.user.ResetPasswordContext;
 import com.cloud.pro.server.modules.context.user.UserLoginContext;
 import com.cloud.pro.server.modules.context.user.UserRegisterContext;
@@ -16,8 +17,10 @@ import com.cloud.pro.server.modules.po.user.CheckAnswerPO;
 import com.cloud.pro.server.modules.po.user.CheckUsernamePO;
 import com.cloud.pro.server.modules.po.user.ResetPasswordPO;
 import com.cloud.pro.server.modules.po.user.UserLoginPO;
+import com.cloud.pro.server.modules.service.UserSearchHistoryService;
 import com.cloud.pro.server.modules.service.UserService;
 import com.cloud.pro.server.modules.po.user.UserRegisterPO;
+import com.cloud.pro.server.modules.vo.UserSearchHistoryVO;
 import com.cloud.pro.server.modules.vo.UserVO;
 import io.swagger.annotations.Api;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 @RestController
 @RequestMapping("/user")
@@ -38,6 +42,9 @@ public class UserController {
 
     @Resource
     private UserConverter userConverter;
+
+    @Resource
+    private UserSearchHistoryService userSearchHistoryService;
 
     /**
      * 用户注册（幂等）
@@ -136,5 +143,17 @@ public class UserController {
     public Result<UserVO> info() {
         UserVO userVO = userService.info(UserIdUtil.get());
         return Result.data(userVO);
+    }
+
+    /**
+     * 获取用户最新的搜索历史记录，默认十条
+     * @return
+     */
+    @GetMapping("/search/histories")
+    public Result<List<UserSearchHistoryVO>> getUserSearchHistories() {
+        QueryUserSearchHistoryContext context = new QueryUserSearchHistoryContext();
+        context.setUserId(UserIdUtil.get());
+        List<UserSearchHistoryVO> result = userSearchHistoryService.getUserSearchHistories(context);
+        return Result.data(result);
     }
 }
