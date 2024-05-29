@@ -2,6 +2,7 @@ package com.cloud.pro.server.common.stream.event.search;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
@@ -15,6 +16,7 @@ import java.io.Serializable;
 @Setter
 @EqualsAndHashCode
 @ToString
+@NoArgsConstructor
 public class UserSearchEvent implements Serializable {
     private static final long serialVersionUID = 3798302814735054745L;
 

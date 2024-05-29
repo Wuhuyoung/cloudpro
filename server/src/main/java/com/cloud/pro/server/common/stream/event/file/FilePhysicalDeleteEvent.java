@@ -3,6 +3,7 @@ package com.cloud.pro.server.common.stream.event.file;
 import com.cloud.pro.server.modules.entity.UserFile;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
@@ -17,6 +18,7 @@ import java.util.List;
 @Setter
 @EqualsAndHashCode
 @ToString
+@NoArgsConstructor
 public class FilePhysicalDeleteEvent implements Serializable {
 
     private static final long serialVersionUID = -6598514575940945788L;

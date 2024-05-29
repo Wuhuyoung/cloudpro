@@ -312,6 +312,9 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
     @Override
     public void refreshShareStatus(List<Long> fileIdList) {
         // 1.查询所有受影响的分享的ID集合
+        if (CollectionUtils.isEmpty(fileIdList)) {
+            return;
+        }
         List<Long> shareIdList = getShareIdListByFileIdList(fileIdList);
         // 2.判断每一个分享对应的文件以及所有的父文件夹都是正常，这种情况，把该分享的状态变为正常
         // 3.如果有分享的文件或其上层文件夹被删除，则变更该分享的状态为 有文件被删除

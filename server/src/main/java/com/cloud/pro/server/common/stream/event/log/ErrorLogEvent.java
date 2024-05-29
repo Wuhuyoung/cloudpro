@@ -2,6 +2,7 @@ package com.cloud.pro.server.common.stream.event.log;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
@@ -15,6 +16,7 @@ import java.io.Serializable;
 @Setter
 @EqualsAndHashCode
 @ToString
+@NoArgsConstructor
 public class ErrorLogEvent implements Serializable {
     private static final long serialVersionUID = -542287519277426799L;
 

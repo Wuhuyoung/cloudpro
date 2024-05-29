@@ -3,6 +3,7 @@ package com.cloud.pro.cache.redis.config;
 import com.alibaba.fastjson.support.spring.GenericFastJsonRedisSerializer;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -39,6 +40,8 @@ public class RedisCacheConfig {
         // 在反序列化时，可以根据类信息将 JSON 字符串转换回相应的对象
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        // Jackson不能处理LocalDateTime，必须加上这个才可以
+        objectMapper.registerModule(new JavaTimeModule());
         jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
 
         // fastJson比Jackson序列化器更快
@@ -65,6 +68,8 @@ public class RedisCacheConfig {
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        // Jackson不能处理LocalDateTime，必须加上这个才可以
+        objectMapper.registerModule(new JavaTimeModule());
         jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
 
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration

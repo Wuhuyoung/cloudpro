@@ -3,6 +3,7 @@ package com.cloud.pro.server.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.jackson.JsonComponent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -20,6 +21,10 @@ public class JsonConfig {
         module.addSerializer(Long.class, ToStringSerializer.instance);
         module.addSerializer(Long.TYPE, ToStringSerializer.instance);
         objectMapper.registerModule(module);
+
+        // 支持序列化和反序列化LocalDate和LocalDateTime
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+        objectMapper.registerModule(javaTimeModule);
         return objectMapper;
     }
 }

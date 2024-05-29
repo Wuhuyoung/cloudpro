@@ -2,6 +2,7 @@ package com.cloud.pro.server.common.stream.event.file;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
@@ -16,6 +17,7 @@ import java.util.List;
 @Setter
 @EqualsAndHashCode
 @ToString
+@NoArgsConstructor
 public class DeleteFileEvent implements Serializable {
     private static final long serialVersionUID = 1056062250877710499L;
 
